@@ -4,10 +4,9 @@
     "\\Data",
     "\\DTOs",
     "\\Endpoints",
-    "\\Migrations",
     "\\Models",
     "\\Services"
   ],
-  "SelectedNode": "\\Program.cs",
+  "SelectedNode": "\\DTOs\\CreateSensorDto.cs",
   "PreviewInSolutionExplorer": false
 }

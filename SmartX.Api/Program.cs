@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using SmartX.Api.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
@@ -14,8 +17,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-var app = builder.Build();
+builder.Services.AddDbContext<SmartXContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("SmartXConnection")));
 
+var app = builder.Build();
 
 app.UseCors("React");
 

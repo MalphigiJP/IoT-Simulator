@@ -3,6 +3,14 @@
   "WorkspaceRootPath": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\Models\\Sensor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Models\\Sensor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\DTOs\\CreateSensorDto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:DTOs\\CreateSensorDto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
@@ -23,14 +31,40 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+              "Title": "Sensor.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\Models\\Sensor.cs",
+              "RelativeDocumentMoniker": "Models\\Sensor.cs",
+              "ToolTip": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\Models\\Sensor.cs",
+              "RelativeToolTip": "Models\\Sensor.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAABMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-06T09:29:41.99Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CreateSensorDto.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\DTOs\\CreateSensorDto.cs",
+              "RelativeDocumentMoniker": "DTOs\\CreateSensorDto.cs",
+              "ToolTip": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\DTOs\\CreateSensorDto.cs",
+              "RelativeToolTip": "DTOs\\CreateSensorDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-06T09:28:17.054Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\Program.cs",
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "C:\\Users\\emeris\\Documents\\Smart-X Gateway\\SmartX.Api\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAkAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAiwBEAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-05T12:39:17.478Z",
+              "WhenOpened": "2026-08-06T09:18:06.036Z",
               "EditorCaption": ""
             }
           ]

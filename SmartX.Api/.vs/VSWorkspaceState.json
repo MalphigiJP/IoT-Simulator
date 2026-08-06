@@ -1,6 +1,13 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\Data",
+    "\\DTOs",
+    "\\Endpoints",
+    "\\Migrations",
+    "\\Models",
+    "\\Services"
   ],
+  "SelectedNode": "\\Models\\Sensor.cs",
   "PreviewInSolutionExplorer": false
 }

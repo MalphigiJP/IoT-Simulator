@@ -14,4 +14,13 @@ export const createSensor = async (sensor) => {
     return response.data;
 };
 
+export const updateSensor = async (id, sensor) => {
+    const response = await api.put(`/sensors/${id}`, sensor);
+    return response.data;
+};
+
+export const deleteSensor = async (id) => {
+    await api.delete(`/sensors/${id}`);
+};
+
 export default api;

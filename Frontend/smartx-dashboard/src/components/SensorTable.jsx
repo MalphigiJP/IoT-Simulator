@@ -1,13 +1,23 @@
-function SensorTable({ sensors }) {
+function SensorTable({
+    sensors,
+    onEdit,
+    onDelete
+}) {
 
     return (
-        <div>
 
-            <h2>Registered Sensors</h2>
+        <div className="sensor-table">
+
+            <h2>
+                Registered Sensors
+            </h2>
+
 
             {sensors.length === 0 ? (
 
-                <p>No sensors have been registered yet.</p>
+                <p>
+                    No sensors match your search.
+                </p>
 
             ) : (
 
@@ -16,14 +26,35 @@ function SensorTable({ sensors }) {
                     <thead>
 
                         <tr>
-                            <th>ID</th>
-                            <th>MAC Address</th>
-                            <th>Location</th>
-                            <th>Category</th>
-                            <th>Registered</th>
+
+                            <th>
+                                ID
+                            </th>
+
+                            <th>
+                                MAC Address
+                            </th>
+
+                            <th>
+                                Location
+                            </th>
+
+                            <th>
+                                Category
+                            </th>
+
+                            <th>
+                                Registered
+                            </th>
+
+                            <th>
+                                Actions
+                            </th>
+
                         </tr>
 
                     </thead>
+
 
                     <tbody>
 
@@ -31,18 +62,65 @@ function SensorTable({ sensors }) {
 
                             <tr key={sensor.id}>
 
-                                <td>{sensor.id}</td>
-
-                                <td>{sensor.macAddress}</td>
-
-                                <td>{sensor.location}</td>
-
-                                <td>{sensor.category}</td>
+                                <td>
+                                    {sensor.id}
+                                </td>
 
                                 <td>
-                                    {new Date(
-                                        sensor.registeredAt
-                                    ).toLocaleString()}
+                                    {sensor.macAddress}
+                                </td>
+
+                                <td>
+                                    {sensor.location}
+                                </td>
+
+                                <td>
+                                    {sensor.category}
+                                </td>
+
+                                <td>
+
+                                    {sensor.registeredAt
+
+                                        ? new Date(
+                                            sensor.registeredAt
+                                        ).toLocaleString()
+
+                                        : "Unknown"
+
+                                    }
+
+                                </td>
+
+
+                                <td>
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            onEdit(sensor)
+                                        }
+                                    >
+
+                                        Edit
+
+                                    </button>
+
+
+                                    {" "}
+
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            onDelete(sensor.id)
+                                        }
+                                    >
+
+                                        Delete
+
+                                    </button>
+
                                 </td>
 
                             </tr>
@@ -56,7 +134,9 @@ function SensorTable({ sensors }) {
             )}
 
         </div>
+
     );
+
 }
 
 export default SensorTable;

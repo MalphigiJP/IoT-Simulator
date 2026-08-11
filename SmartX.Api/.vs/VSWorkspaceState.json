@@ -5,7 +5,9 @@
     "\\DTOs",
     "\\Endpoints",
     "\\Models",
-    "\\Services"
+    "\\Services",
+    "\\Validation"
   ],
+  "SelectedNode": "\\Validation\\SensorValidator.cs",
   "PreviewInSolutionExplorer": false
 }

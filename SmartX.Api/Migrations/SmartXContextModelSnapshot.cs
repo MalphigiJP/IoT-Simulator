@@ -50,6 +50,57 @@ namespace SmartX.Api.Migrations
 
                     b.ToTable("Sensors");
                 });
+
+            modelBuilder.Entity("SmartX.Api.Models.TelemetryRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("SoilMoisture")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Temperature")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("ValveOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("Wattage")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SensorId");
+
+                    b.HasIndex("Timestamp");
+
+                    b.ToTable("TelemetryRecords");
+                });
+
+            modelBuilder.Entity("SmartX.Api.Models.TelemetryRecord", b =>
+                {
+                    b.HasOne("SmartX.Api.Models.Sensor", "Sensor")
+                        .WithMany("TelemetryRecords")
+                        .HasForeignKey("SensorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sensor");
+                });
+
+            modelBuilder.Entity("SmartX.Api.Models.Sensor", b =>
+                {
+                    b.Navigation("TelemetryRecords");
+                });
 #pragma warning restore 612, 618
         }
     }

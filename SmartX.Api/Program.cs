@@ -160,4 +160,134 @@ app.MapDelete("/api/sensors/{id:int}",
         return Results.NoContent();
     });
 
+app.MapPost("/api/telemetry",
+    async (
+        TelemetryDto dto,
+        SmartXContext db) =>
+    {
+        var sensor = await db.Sensors
+            .FindAsync(dto.SensorId);
+
+        if (sensor is null)
+        {
+            return Results.BadRequest(new
+            {
+                message = "Sensor does not exist."
+            });
+        }
+
+        var telemetry = new TelemetryRecord
+        {
+            SensorId = dto.SensorId,
+            SoilMoisture = dto.SoilMoisture,
+            Temperature = dto.Temperature,
+            Wattage = dto.Wattage,
+            ValveOpen = dto.ValveOpen,
+            Timestamp = dto.Timestamp ?? DateTime.UtcNow
+        };
+
+        db.TelemetryRecords.Add(telemetry);
+
+        await db.SaveChangesAsync();
+
+        return Results.Created(
+            $"/api/telemetry/{telemetry.Id}",
+            new
+            {
+                telemetry.Id,
+                telemetry.SensorId,
+                telemetry.SoilMoisture,
+                telemetry.Temperature,
+                telemetry.Wattage,
+                telemetry.ValveOpen,
+                telemetry.Timestamp
+            });
+
+    });
+
+app.MapGet("/api/telemetry",
+    async (SmartXContext db) =>
+    {
+        var telemetry = await db.TelemetryRecords
+            .OrderByDescending(t => t.Timestamp)
+            .Take(100)
+            .ToListAsync();
+
+        return Results.Ok(telemetry);
+    });
+
+app.MapGet("/api/sensors/{sensorId:int}/telemetry",
+    async (
+        int sensorId,
+        SmartXContext db) =>
+    {
+        var telemetry = await db.TelemetryRecords
+            .Where(t => t.SensorId == sensorId)
+            .OrderByDescending(t => t.Timestamp)
+            .Take(100)
+            .ToListAsync();
+
+        return Results.Ok(telemetry);
+    });
+
+app.MapPost("/api/telemetry/batch",
+    async (
+        List<TelemetryDto> payload,
+        SmartXContext db) =>
+    {
+        if (payload.Count == 0)
+        {
+            return Results.BadRequest(new
+            {
+                message = "Telemetry batch cannot be empty."
+            });
+        }
+
+        var sensorIds = payload
+            .Select(t => t.SensorId)
+            .Distinct()
+            .ToList();
+
+        var existingSensorIds = await db.Sensors
+            .Where(s => sensorIds.Contains(s.Id))
+            .Select(s => s.Id)
+            .ToListAsync();
+
+        var existingIds = existingSensorIds.ToHashSet();
+
+        var invalidSensorIds = sensorIds
+            .Where(id => !existingIds.Contains(id))
+            .ToList();
+
+        if (invalidSensorIds.Count > 0)
+        {
+            return Results.BadRequest(new
+            {
+                message = "One or more sensors do not exist.",
+                sensorIds = invalidSensorIds
+            });
+        }
+
+        var records = payload.Select(dto =>
+            new TelemetryRecord
+            {
+                SensorId = dto.SensorId,
+                SoilMoisture = dto.SoilMoisture,
+                Temperature = dto.Temperature,
+                Wattage = dto.Wattage,
+                ValveOpen = dto.ValveOpen,
+                Timestamp = dto.Timestamp ?? DateTime.UtcNow
+            })
+            .ToList();
+
+        await db.TelemetryRecords.AddRangeAsync(records);
+
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new
+        {
+            inserted = records.Count
+        });
+    });
+
 app.Run();

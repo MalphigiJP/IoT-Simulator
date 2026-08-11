@@ -1,23 +1,8 @@
-import { useEffect, useState } from "react";
-import api from "./services/api";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
 
-    const [message, setMessage] = useState("");
-
-    useEffect(() => {
-
-        api.get("/")
-            .then(res => setMessage(res.data))
-            .catch(err => console.log(err));
-
-    }, []);
-
-    return (
-        <>
-            <h1>{message}</h1>
-        </>
-    );
+    return <Dashboard />;
 
 }
 

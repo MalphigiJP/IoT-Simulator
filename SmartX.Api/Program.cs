@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<TelemetrySeeder>();
 
 builder.Services.AddCors(options =>
 {
@@ -26,6 +27,7 @@ builder.Services.AddDbContext<SmartXContext>(options =>
         builder.Configuration.GetConnectionString("SmartXConnection")));
 
 builder.Services.AddScoped<SensorService>();
+builder.Services.AddScoped<TelemetrySeeder>();
 
 var app = builder.Build();
 
@@ -288,6 +290,55 @@ app.MapPost("/api/telemetry/batch",
         {
             inserted = records.Count
         });
+    });
+
+app.MapPost("/api/telemetry/simulate",
+    async (
+        TelemetrySimulationDto request,
+        TelemetrySeeder seeder) =>
+    {
+        if (request.RecordCount <= 0)
+        {
+            return Results.BadRequest(new
+            {
+                message =
+                    "Record count must be greater than zero."
+            });
+        }
+
+        if (request.BatchSize <= 0)
+        {
+            return Results.BadRequest(new
+            {
+                message =
+                    "Batch size must be greater than zero."
+            });
+        }
+
+        if (request.AnomalyRate < 0 ||
+            request.AnomalyRate > 1)
+        {
+            return Results.BadRequest(new
+            {
+                message =
+                    "Anomaly rate must be between 0 and 1."
+            });
+        }
+
+        try
+        {
+            var result =
+                await seeder.GenerateAsync(request);
+
+            return Results.Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Results.BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
     });
 
 app.Run();

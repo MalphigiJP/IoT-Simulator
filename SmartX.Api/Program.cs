@@ -1,15 +1,16 @@
+
 using Microsoft.EntityFrameworkCore;
+
 using SmartX.Api.Data;
 using SmartX.Api.DTOs;
 using SmartX.Api.Models;
 using SmartX.Api.Services;
-using SmartX.Api.Validation;
+using SmartX.Api.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<TelemetrySeeder>();
 
 builder.Services.AddCors(options =>
 {
@@ -22,9 +23,23 @@ builder.Services.AddCors(options =>
     });
 });
 
+
 builder.Services.AddDbContext<SmartXContext>(options =>
+{
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("SmartXConnection")));
+        builder.Configuration.GetConnectionString(
+            "SmartXConnection"
+        ),
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null
+            );
+        }
+    );
+});
 
 builder.Services.AddScoped<SensorService>();
 builder.Services.AddScoped<TelemetrySeeder>();
@@ -39,128 +54,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("React");
 
-app.MapGet("/", () => "Smart-X API Running");
+app.MapGet("/", () =>
+    Results.Ok("Smart-X API Running")
+);
 
-app.MapPost("/api/sensors",
-    async (CreateSensorDto dto, SmartXContext db) =>
-    {
-        var validationError = SensorValidator.Validate(dto);
+app.MapSensorEndpoints();
 
-        if (validationError is not null)
-        {
-            return Results.BadRequest(new
-            {
-                message = validationError
-            });
-        }
-
-        var existingSensor = await db.Sensors
-            .FirstOrDefaultAsync(s =>
-                s.MacAddress == dto.MacAddress);
-
-        if (existingSensor is not null)
-        {
-            return Results.Conflict(new
-            {
-                message = "A sensor with this MAC address already exists."
-            });
-        }
-
-        var sensor = new Sensor
-        {
-            MacAddress = dto.MacAddress,
-            Location = dto.Location,
-            Category = dto.Category
-        };
-
-        db.Sensors.Add(sensor);
-
-        await db.SaveChangesAsync();
-
-        return Results.Created(
-            $"/api/sensors/{sensor.Id}",
-            sensor);
-    });
-
-app.MapGet("/api/sensors",
-    async (SensorService service) =>
-    {
-        return Results.Ok(await service.GetAllAsync());
-    });
-
-app.MapGet("/api/sensors/{id:int}",
-    async (int id, SmartXContext db) =>
-    {
-        var sensor = await db.Sensors.FindAsync(id);
-
-        return sensor is null
-            ? Results.NotFound()
-            : Results.Ok(sensor);
-    });
-
-app.MapPut("/api/sensors/{id:int}",
-    async (
-        int id,
-        UpdateSensorDto dto,
-        SmartXContext db) =>
-    {
-        var validationError = SensorValidator.Validate(dto);
-
-        if (validationError is not null)
-        {
-            return Results.BadRequest(new
-            {
-                message = validationError
-            });
-        }
-
-        var sensor = await db.Sensors.FindAsync(id);
-
-        if (sensor is null)
-        {
-            return Results.NotFound();
-        }
-
-        var existingSensor = await db.Sensors
-            .FirstOrDefaultAsync(s =>
-                s.MacAddress == dto.MacAddress &&
-                s.Id != id);
-
-        if (existingSensor is not null)
-        {
-            return Results.Conflict(new
-            {
-                message = "A sensor with this MAC address already exists."
-            });
-        }
-
-        sensor.MacAddress = dto.MacAddress;
-        sensor.Location = dto.Location;
-        sensor.Category = dto.Category;
-
-        await db.SaveChangesAsync();
-
-        return Results.Ok(sensor);
-    });
-
-app.MapDelete("/api/sensors/{id:int}",
-    async (
-        int id,
-        SmartXContext db) =>
-    {
-        var sensor = await db.Sensors.FindAsync(id);
-
-        if (sensor is null)
-        {
-            return Results.NotFound();
-        }
-
-        db.Sensors.Remove(sensor);
-
-        await db.SaveChangesAsync();
-
-        return Results.NoContent();
-    });
 
 app.MapPost("/api/telemetry",
     async (
@@ -203,20 +102,24 @@ app.MapPost("/api/telemetry",
                 telemetry.Wattage,
                 telemetry.ValveOpen,
                 telemetry.Timestamp
-            });
+            }
+        );
+    })
+    .WithTags("Telemetry");
 
-    });
 
 app.MapGet("/api/telemetry",
     async (SmartXContext db) =>
     {
         var telemetry = await db.TelemetryRecords
+            .AsNoTracking()
             .OrderByDescending(t => t.Timestamp)
             .Take(100)
             .ToListAsync();
 
         return Results.Ok(telemetry);
-    });
+    })
+    .WithTags("Telemetry");
 
 app.MapGet("/api/sensors/{sensorId:int}/telemetry",
     async (
@@ -224,20 +127,22 @@ app.MapGet("/api/sensors/{sensorId:int}/telemetry",
         SmartXContext db) =>
     {
         var telemetry = await db.TelemetryRecords
+            .AsNoTracking()
             .Where(t => t.SensorId == sensorId)
             .OrderByDescending(t => t.Timestamp)
             .Take(100)
             .ToListAsync();
 
         return Results.Ok(telemetry);
-    });
+    })
+    .WithTags("Telemetry");
 
 app.MapPost("/api/telemetry/batch",
     async (
         List<TelemetryDto> payload,
         SmartXContext db) =>
     {
-        if (payload.Count == 0)
+        if (payload is null || payload.Count == 0)
         {
             return Results.BadRequest(new
             {
@@ -255,7 +160,8 @@ app.MapPost("/api/telemetry/batch",
             .Select(s => s.Id)
             .ToListAsync();
 
-        var existingIds = existingSensorIds.ToHashSet();
+        var existingIds =
+            existingSensorIds.ToHashSet();
 
         var invalidSensorIds = sensorIds
             .Where(id => !existingIds.Contains(id))
@@ -282,7 +188,8 @@ app.MapPost("/api/telemetry/batch",
             })
             .ToList();
 
-        await db.TelemetryRecords.AddRangeAsync(records);
+        await db.TelemetryRecords
+            .AddRangeAsync(records);
 
         await db.SaveChangesAsync();
 
@@ -290,7 +197,8 @@ app.MapPost("/api/telemetry/batch",
         {
             inserted = records.Count
         });
-    });
+    })
+    .WithTags("Telemetry");
 
 app.MapPost("/api/telemetry/simulate",
     async (
@@ -339,6 +247,7 @@ app.MapPost("/api/telemetry/simulate",
                 message = ex.Message
             });
         }
-    });
+    })
+    .WithTags("Telemetry");
 
 app.Run();

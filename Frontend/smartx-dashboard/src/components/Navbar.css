@@ -1,0 +1,39 @@
+/* Top navigation for the sensor registry. Sidebar styles live in TelemetryDashboard.css. */
+.sx-registry-navbar {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px clamp(16px, 4vw, 48px);
+  background: #0d1928;
+  border-bottom: 1px solid #29374b;
+  color: #edf5ff;
+}
+.sx-registry-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #edf5ff;
+  text-decoration: none;
+}
+.sx-registry-brand span { color: #6ce7e0; }
+.sx-registry-navlinks { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.sx-registry-navlink {
+  color: #aabbd1;
+  text-decoration: none;
+  padding: 10px 13px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.sx-registry-navlink:hover { color: #fff; background: #16273a; }
+.sx-registry-navlink--active { color: #9ef0ed; background: #153b46; }
+@media (max-width: 480px) {
+  .sx-registry-navbar { align-items: flex-start; }
+  .sx-registry-navlinks { width: 100%; }
+  .sx-registry-navlink { padding: 9px 10px; }
+}

@@ -166,6 +166,25 @@ The intended troubleshooting journey is simple: **notice a problem → identify 
 - **Energy monitoring:** surface power spikes and review recent wattage trends across deployed devices.
 - **Development and demonstrations:** generate representative telemetry volumes, explore dashboard interactions, and demonstrate gateway/data-management concepts without physical hardware.
 
+
+### Part 2
+Phase 1: Navigation and Application State
+
+Phase 1 establishes the frontend foundation for Smart-X's real-time processing and device management features.
+
+### Implemented Features
+- **Main Navigation:** Added navigation between Sensor Data Ingestion & Telemetry, Real-Time Command Stream & History, Network Topology & Mesh Routing, and Sensor Registry.
+- **Dedicated Module Pages:** Created `CommandStream.jsx` and `NetworkTopology.jsx` as foundations for upcoming functionality.
+- **Shared Application State:** Implemented React Context (`AppStateContext.jsx`) to preserve selected sensors, search filters, chart preferences, pagination, and editing selections when navigating between pages.
+- **Responsive Interface:** Maintained consistent styling and navigation across desktop and mobile devices.
+
+### Technologies Used
+React, React Router, React Context API, JavaScript (JSX), and CSS.
+
+**Outcome:** Smart-X now supports seamless client-side navigation while retaining important user interface settings. This establishes the foundation for real-time command processing, device control, and predictive monitoring in subsequent phases.
+
+
+
 ## Reference List
 
 **Assignment 1**

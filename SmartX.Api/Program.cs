@@ -43,6 +43,8 @@ builder.Services.AddDbContext<SmartXContext>(options =>
 
 builder.Services.AddScoped<SensorService>();
 builder.Services.AddScoped<TelemetrySeeder>();
+builder.Services.AddSingleton<TelemetryQueue>();
+builder.Services.AddHostedService<TelemetryQueueWorker>();
 
 var app = builder.Build();
 
@@ -61,51 +63,66 @@ app.MapGet("/", () =>
 app.MapSensorEndpoints();
 
 
-app.MapPost("/api/telemetry",
-    async (
-        TelemetryDto dto,
-        SmartXContext db) =>
-    {
-        var sensor = await db.Sensors
-            .FindAsync(dto.SensorId);
 
-        if (sensor is null)
+app.MapPost("/api/telemetry",
+    (TelemetryDto dto, TelemetryQueue queue) =>
+    {
+
+        if (dto.SensorId <= 0)
         {
             return Results.BadRequest(new
             {
-                message = "Sensor does not exist."
+                message = "A valid SensorId is required."
             });
         }
 
-        var telemetry = new TelemetryRecord
+        bool hasMeasurement =
+            dto.SoilMoisture.HasValue ||
+            dto.Temperature.HasValue ||
+            dto.Wattage.HasValue ||
+            dto.ValveOpen.HasValue;
+
+        if (!hasMeasurement)
         {
-            SensorId = dto.SensorId,
-            SoilMoisture = dto.SoilMoisture,
-            Temperature = dto.Temperature,
-            Wattage = dto.Wattage,
-            ValveOpen = dto.ValveOpen,
-            Timestamp = dto.Timestamp ?? DateTime.UtcNow
-        };
+            return Results.BadRequest(new
+            {
+                message =
+                    "At least one telemetry measurement is required."
+            });
+        }
 
-        db.TelemetryRecords.Add(telemetry);
+        var packet = QueuedTelemetry.FromDto(dto);
 
-        await db.SaveChangesAsync();
+        if (!queue.TryEnqueue(packet))
+        {
+            return Results.Problem(
+                title: "Telemetry queue is full",
+                detail:
+                    "The gateway is temporarily unable " +
+                    "to accept additional telemetry.",
+                statusCode: 429
+            );
+        }
 
-        return Results.Created(
-            $"/api/telemetry/{telemetry.Id}",
+        return Results.Json(
             new
             {
-                telemetry.Id,
-                telemetry.SensorId,
-                telemetry.SoilMoisture,
-                telemetry.Temperature,
-                telemetry.Wattage,
-                telemetry.ValveOpen,
-                telemetry.Timestamp
-            }
+                message =
+                    "Telemetry accepted for FIFO processing.",
+
+                packetId = packet.PacketId,
+
+                sensorId = packet.SensorId,
+
+                receivedAtUtc = packet.ReceivedAtUtc,
+
+                status = "Queued"
+            },
+            statusCode: StatusCodes.Status202Accepted
         );
     })
     .WithTags("Telemetry");
+
 
 
 app.MapGet("/api/telemetry",
@@ -137,11 +154,14 @@ app.MapGet("/api/sensors/{sensorId:int}/telemetry",
     })
     .WithTags("Telemetry");
 
+
 app.MapPost("/api/telemetry/batch",
-    async (
+    (
         List<TelemetryDto> payload,
-        SmartXContext db) =>
+        TelemetryQueue queue
+    ) =>
     {
+
         if (payload is null || payload.Count == 0)
         {
             return Results.BadRequest(new
@@ -150,55 +170,68 @@ app.MapPost("/api/telemetry/batch",
             });
         }
 
-        var sensorIds = payload
-            .Select(t => t.SensorId)
-            .Distinct()
-            .ToList();
-
-        var existingSensorIds = await db.Sensors
-            .Where(s => sensorIds.Contains(s.Id))
-            .Select(s => s.Id)
-            .ToListAsync();
-
-        var existingIds =
-            existingSensorIds.ToHashSet();
-
-        var invalidSensorIds = sensorIds
-            .Where(id => !existingIds.Contains(id))
-            .ToList();
-
-        if (invalidSensorIds.Count > 0)
+        // Prevent excessively large requests.
+        if (payload.Count > 500)
         {
             return Results.BadRequest(new
             {
-                message = "One or more sensors do not exist.",
-                sensorIds = invalidSensorIds
+                message =
+                    "Maximum batch size is 500 telemetry records."
             });
         }
 
-        var records = payload.Select(dto =>
-            new TelemetryRecord
+        bool hasInvalidPackets = payload.Any(dto =>
+            dto is null ||
+            dto.SensorId <= 0 ||
+            !(
+                dto.SoilMoisture.HasValue ||
+                dto.Temperature.HasValue ||
+                dto.Wattage.HasValue ||
+                dto.ValveOpen.HasValue
+            )
+        );
+
+        if (hasInvalidPackets)
+        {
+            return Results.BadRequest(new
             {
-                SensorId = dto.SensorId,
-                SoilMoisture = dto.SoilMoisture,
-                Temperature = dto.Temperature,
-                Wattage = dto.Wattage,
-                ValveOpen = dto.ValveOpen,
-                Timestamp = dto.Timestamp ?? DateTime.UtcNow
-            })
+                message =
+                    "Every packet must have a valid SensorId " +
+                    "and at least one measurement."
+            });
+        }
+
+        var packets = payload
+            .Select(QueuedTelemetry.FromDto)
             .ToList();
 
-        await db.TelemetryRecords
-            .AddRangeAsync(records);
-
-        await db.SaveChangesAsync();
-
-        return Results.Ok(new
+        // Enqueue the entire batch or none of it.
+        if (!queue.TryEnqueueBatch(packets))
         {
-            inserted = records.Count
-        });
+            return Results.Problem(
+                title: "Telemetry queue is full",
+                detail:
+                    "Insufficient queue capacity " +
+                    "for the complete batch.",
+                statusCode: 429
+            );
+        }
+
+        return Results.Json(
+            new
+            {
+                message =
+                    "Telemetry batch accepted for FIFO processing.",
+
+                acceptedRecords = packets.Count,
+
+                status = "Queued"
+            },
+            statusCode: StatusCodes.Status202Accepted
+        );
     })
     .WithTags("Telemetry");
+
 
 app.MapPost("/api/telemetry/simulate",
     async (
@@ -249,5 +282,15 @@ app.MapPost("/api/telemetry/simulate",
         }
     })
     .WithTags("Telemetry");
+
+
+app.MapGet("/api/telemetry/queue/status",
+    (TelemetryQueue queue) =>
+    {
+        return Results.Ok(queue.GetStatus());
+    })
+    .WithTags("Telemetry")
+    .WithName("GetTelemetryQueueStatus");
+
 
 app.Run();

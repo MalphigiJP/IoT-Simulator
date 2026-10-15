@@ -1,75 +1,179 @@
 .sx-registry-list {
-  box-sizing: border-box;
-  width: 100%;
-  margin: 26px 0;
-  padding: clamp(18px, 3vw, 28px);
-  border: 1px solid #dce4ef;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 10px 30px rgba(18, 40, 68, 0.05);
-  color: #14283d;
+    width: 100%;
+    color: #e7f4fb;
 }
-.sx-registry-list-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 18px;
-  flex-wrap: wrap;
+
+.sx-registry-toolbar {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 24px;
 }
-.sx-registry-list-heading h2 { font-size: 22px; margin: 0 0 5px; }
-.sx-registry-list-heading p { color: #53687d; margin: 0; }
-.sx-registry-list-count {
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: #e9f8f7;
-  color: #006e69;
-  font-size: 13px;
-  font-weight: 700;
+
+.sx-registry-field {
+    display: flex;
+    flex: 1 1 220px;
+    flex-direction: column;
+    gap: 8px;
 }
-.sx-registry-filters { display: flex; flex-wrap: wrap; gap: 14px; margin: 24px 0; }
-.sx-registry-filters label { display: flex; flex-direction: column; gap: 7px; flex: 1 1 220px; font-size: 13px; font-weight: 700; }
-.sx-registry-filters input, .sx-registry-filters select {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
-  border-radius: 9px;
-  border: 1px solid #cbd6e2;
-  background: #fff;
-  color: #14283d;
-  font: inherit;
+
+.sx-registry-field span {
+    color: #a4b7c9;
+    font-size: 12px;
+    font-weight: 600;
 }
-.sx-registry-filters :is(input, select):focus-visible, .sx-registry-actions button:focus-visible {
-  outline: 3px solid #73c8c5;
-  outline-offset: 2px;
+
+.sx-registry-field input,
+.sx-registry-field select {
+    width: 100%;
+    min-height: 43px;
+    padding: 10px 13px;
+    border: 1px solid #355067;
+    border-radius: 9px;
+    background: #14273a;
+    color: #f3f8fc;
+    font: inherit;
 }
-.sx-registry-table-wrap { width: 100%; overflow-x: auto; }
-.sx-registry-table { width: 100%; border-collapse: collapse; text-align: left; }
-.sx-registry-table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #5d7186; }
-.sx-registry-table th, .sx-registry-table td { padding: 14px 10px; border-bottom: 1px solid #e5ebf2; }
-.sx-registry-table td { font-size: 14px; }
-.sx-registry-table code { overflow-wrap: anywhere; }
-.sx-registry-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.sx-registry-actions button, .sx-registry-pagination button {
-  border: 1px solid #abc8d4;
-  background: #edf7fa;
-  color: #184654;
-  border-radius: 8px;
-  cursor: pointer;
-  padding: 8px 11px;
-  font-weight: 700;
+
+.sx-registry-field input:focus,
+.sx-registry-field select:focus {
+    outline: 2px solid #6ce7e0;
+    outline-offset: 1px;
 }
-.sx-registry-actions .sx-registry-delete { background: #fff2f1; border-color: #f1bfba; color: #a82d29; }
-.sx-registry-actions button:hover:enabled, .sx-registry-pagination button:hover:enabled { filter: brightness(0.95); }
-.sx-registry-actions button:disabled, .sx-registry-pagination button:disabled { cursor: not-allowed; opacity: 0.5; }
-.sx-registry-empty { padding: 32px 10px; text-align: center; color: #637487; }
-.sx-registry-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding-top: 18px; font-size: 13px; color: #53687d; }
-.sx-registry-pagination > div { display: flex; gap: 8px; }
-@media (max-width: 750px) {
-  .sx-registry-table thead { display: none; }
-  .sx-registry-table tr { display: block; padding: 12px 0; border-bottom: 1px solid #dfe6ee; }
-  .sx-registry-table td { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border: 0; padding: 9px 2px; text-align: right; }
-  .sx-registry-table td::before { content: attr(data-label); font-size: 12px; font-weight: 700; color: #667b90; text-align: left; }
-  .sx-registry-table td:last-child { justify-content: flex-end; }
-  .sx-registry-table td:last-child::before { margin-right: auto; }
+
+.sx-registry-clear {
+    min-height: 43px;
+    padding: 10px 16px;
+    background: #203549;
+    border: 1px solid #385368;
+    border-radius: 9px;
+    color: #d8eaf7;
+    cursor: pointer;
+}
+
+.sx-registry-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #30485c;
+    border-radius: 12px;
+}
+
+.sx-registry-table {
+    width: 100%;
+    min-width: 750px;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.sx-registry-table thead {
+    background: #1c3044;
+}
+
+.sx-registry-table th {
+    padding: 15px;
+    color: #aac0d0;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sx-registry-table td {
+    padding: 15px;
+    color: #e7f4fb;
+    font-size: 13px;
+    border-top: 1px solid #30485c;
+}
+
+.sx-registry-table tbody tr {
+    background: #142338;
+}
+
+.sx-registry-table tbody tr:hover {
+    background: #1a3045;
+}
+
+.sx-registry-table code {
+    color: #a9eee9;
+    font-size: 12px;
+}
+
+.sx-registry-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.sx-registry-actions button {
+    padding: 8px 12px;
+    border: 1px solid #3d6372;
+    border-radius: 7px;
+    background: #20414a;
+    color: #a9eee9;
+    cursor: pointer;
+}
+
+.sx-registry-actions button:hover {
+    background: #2a5a60;
+}
+
+.sx-registry-actions .sx-registry-delete {
+    background: #482c3a;
+    border-color: #784353;
+    color: #ffadb8;
+}
+
+.sx-registry-actions .sx-registry-delete:hover {
+    background: #603545;
+}
+
+.sx-registry-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 20px;
+    font-size: 12px;
+    color: #a4b7c9;
+}
+
+.sx-registry-page-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sx-registry-page-controls button {
+    padding: 9px 13px;
+    background: #203549;
+    color: #e7f4fb;
+    border: 1px solid #385368;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.sx-registry-page-controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.sx-registry-empty {
+    padding: 25px;
+    text-align: center;
+    color: #a4b7c9;
+}
+
+@media (max-width: 650px) {
+    .sx-registry-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .sx-registry-field {
+        flex: 1 1 auto;
+    }
+
+    .sx-registry-pagination {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

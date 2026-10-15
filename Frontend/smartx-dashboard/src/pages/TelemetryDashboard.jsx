@@ -12,6 +12,7 @@ import { Line } from "react-chartjs-2";
 import { getSensors, getSensorHealth } from "../api/sensorApi";
 import { getTelemetry, getSensorTelemetry } from "../api/telemetryApi";
 import Navbar from "../components/Navbar";
+import { useAppState } from "../context/AppStateContext";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
@@ -89,17 +90,30 @@ function MetricCard({ label, value, note, tone = "neutral", onClick, active }) {
 }
 
 export default function TelemetryDashboard() {
+  
+  const {
+      metric,
+      setMetric,
+
+      selectedSensorId,
+      setSelectedSensorId,
+
+      search,
+      setSearch,
+
+      statusFilter,
+      setStatusFilter,
+
+      categoryFilter,
+      setCategoryFilter
+  } = useAppState();
+
   const [data, setData] = useState({ sensors: [], health: [], telemetry: [], updatedAt: null });
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const requestInFlight = useRef(false);
   const [error, setError] = useState("");
-  const [metric, setMetric] = useState("temperature");
   const [sensorHistory, setSensorHistory] = useState({ sensorId: null, records: [], loading: false, error: "" });
-  const [selectedSensorId, setSelectedSensorId] = useState("all");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All");
   const [guideVisible, setGuideVisible] = useState(() =>
     typeof window === "undefined" ? true : window.localStorage.getItem("smartx-guide-dismissed") !== "true"
   );

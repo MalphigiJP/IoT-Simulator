@@ -1,153 +1,264 @@
-import { useMemo, useState } from "react";
 import "./SensorList.css";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
-/**
- * Reusable sensor registry list. The parent Dashboard owns the API requests
- * and passes sensors plus edit/delete callbacks.
- */
-export default function SensorList({
-  sensors = [],
-  onEdit,
-  onDelete,
-  deletingId = null,
+function SensorList({
+    sensors = [],
+    onEdit,
+    onDelete,
+
+    search,
+    onSearchChange,
+
+    categoryFilter,
+    onCategoryFilterChange,
+
+    page,
+    onPageChange
 }) {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All");
-  const [page, setPage] = useState(1);
 
-  const categories = useMemo(
-    () => [...new Set(sensors.map((s) => s.category).filter(Boolean))].sort(),
-    [sensors]
-  );
+    const categories = [
+        ...new Set(
+            sensors
+                .map((sensor) => sensor.category)
+                .filter(Boolean)
+        )
+    ].sort();
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return sensors.filter((sensor) => {
-      const matchesText = `${sensor.id} ${sensor.macAddress ?? ""} ${sensor.location ?? ""} ${sensor.category ?? ""}`
-        .toLowerCase()
-        .includes(q);
-      const matchesCategory = category === "All" || sensor.category === category;
-      return matchesText && matchesCategory;
+    const filteredSensors = sensors.filter((sensor) => {
+
+        const query = search.trim().toLowerCase();
+
+        const matchesSearch = [
+            sensor.macAddress,
+            sensor.location,
+            sensor.category,
+            String(sensor.id)
+        ].some((value) =>
+            String(value ?? "")
+                .toLowerCase()
+                .includes(query)
+        );
+
+        const matchesCategory =
+            categoryFilter === "All" ||
+            sensor.category === categoryFilter;
+
+        return matchesSearch && matchesCategory;
     });
-  }, [sensors, query, category]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filteredSensors.length / PAGE_SIZE)
+    );
 
-  function updateQuery(value) {
-    setQuery(value);
-    setPage(1);
-  }
+    const currentPage = Math.min(
+        Math.max(page, 1),
+        totalPages
+    );
 
-  function updateCategory(value) {
-    setCategory(value);
-    setPage(1);
-  }
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
 
-  return (
-    <section className="sx-registry-list" aria-labelledby="sensor-list-title">
-      <div className="sx-registry-list-heading">
-        <div>
-          <h2 id="sensor-list-title">Registered sensors</h2>
-          <p>Find and manage devices across your Smart-X deployments.</p>
-        </div>
-        <span className="sx-registry-list-count">{sensors.length} devices</span>
-      </div>
+    const displayedSensors = filteredSensors.slice(
+        startIndex,
+        startIndex + PAGE_SIZE
+    );
 
-      <div className="sx-registry-filters">
-        <label>
-          <span>Search sensors</span>
-          <input
-            type="search"
-            placeholder="Search MAC, location, category or ID"
-            value={query}
-            onChange={(event) => updateQuery(event.target.value)}
-          />
-        </label>
-        <label>
-          <span>Category</span>
-          <select value={category} onChange={(event) => updateCategory(event.target.value)}>
-            <option value="All">All categories</option>
-            {categories.map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
-        </label>
-      </div>
+    const handleSearchChange = (event) => {
+        onSearchChange(event.target.value);
+        onPageChange(1);
+    };
 
-      {filtered.length === 0 ? (
-        <div className="sx-registry-empty">
-          {sensors.length === 0
-            ? "No sensors registered yet. Use the form above to add your first device."
-            : "No sensors match your search. Try different filters."}
-        </div>
-      ) : (
-        <>
-          <div className="sx-registry-table-wrap">
-            <table className="sx-registry-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>MAC address</th>
-                  <th>Location</th>
-                  <th>Category</th>
-                  <th>Registered</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((sensor) => (
-                  <tr key={sensor.id}>
-                    <td data-label="ID">#{sensor.id}</td>
-                    <td data-label="MAC address"><code>{sensor.macAddress}</code></td>
-                    <td data-label="Location">{sensor.location || "Unassigned"}</td>
-                    <td data-label="Category">{sensor.category || "Uncategorised"}</td>
-                    <td data-label="Registered">
-                      {sensor.registeredAt && !Number.isNaN(new Date(sensor.registeredAt).getTime())
-                        ? new Date(sensor.registeredAt).toLocaleString()
-                        : "Unknown"}
-                    </td>
-                    <td data-label="Actions">
-                      <div className="sx-registry-actions">
-                        {onEdit && (
-                          <button type="button" onClick={() => onEdit(sensor)}>Edit</button>
-                        )}
-                        {onDelete && (
-                          <button
-                            type="button"
-                            className="sx-registry-delete"
-                            disabled={deletingId === sensor.id}
-                            onClick={() => onDelete(sensor.id)}
-                          >
-                            {deletingId === sensor.id ? "Deleting…" : "Delete"}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    const handleCategoryChange = (event) => {
+        onCategoryFilterChange(event.target.value);
+        onPageChange(1);
+    };
 
-          {totalPages > 1 && (
-            <div className="sx-registry-pagination">
-              <span>Page {currentPage} of {totalPages} · {filtered.length} matching sensors</span>
-              <div>
-                <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>
-                  Previous
+    const clearFilters = () => {
+        onSearchChange("");
+        onCategoryFilterChange("All");
+        onPageChange(1);
+    };
+
+    return (
+        <div className="sx-registry-list">
+
+            <div className="sx-registry-toolbar">
+
+                <label className="sx-registry-field">
+                    <span>Search devices</span>
+
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={handleSearchChange}
+                        placeholder="MAC, location, ID..."
+                    />
+                </label>
+
+                <label className="sx-registry-field">
+                    <span>Category</span>
+
+                    <select
+                        value={categoryFilter}
+                        onChange={handleCategoryChange}
+                    >
+                        <option value="All">
+                            All categories
+                        </option>
+
+                        {categories.map((category) => (
+                            <option
+                                key={category}
+                                value={category}
+                            >
+                                {category}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+
+                <button
+                    type="button"
+                    className="sx-registry-clear"
+                    onClick={clearFilters}
+                >
+                    Clear Filters
                 </button>
-                <button type="button" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>
-                  Next
-                </button>
-              </div>
+
             </div>
-          )}
-        </>
-      )}
-    </section>
-  );
+
+            <div className="sx-registry-table-wrapper">
+
+                <table className="sx-registry-table">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>MAC Address</th>
+                            <th>Location</th>
+                            <th>Category</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {displayedSensors.map((sensor) => (
+                            <tr key={sensor.id}>
+
+                                <td>{sensor.id}</td>
+
+                                <td>
+                                    <code>
+                                        {sensor.macAddress}
+                                    </code>
+                                </td>
+
+                                <td>
+                                    {sensor.location}
+                                </td>
+
+                                <td>
+                                    {sensor.category}
+                                </td>
+
+                                <td>
+                                    {sensor.registeredAt
+                                        ? new Date(
+                                            sensor.registeredAt
+                                        ).toLocaleString()
+                                        : "Unknown"}
+                                </td>
+
+                                <td>
+                                    <div className="sx-registry-actions">
+
+                                        {onEdit && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    onEdit(sensor)
+                                                }
+                                            >
+                                                Edit
+                                            </button>
+                                        )}
+
+                                        {onDelete && (
+                                            <button
+                                                type="button"
+                                                className="sx-registry-delete"
+                                                onClick={() =>
+                                                    onDelete(sensor.id)
+                                                }
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+
+                                    </div>
+                                </td>
+
+                            </tr>
+                        ))}
+
+                    </tbody>
+
+                </table>
+            </div>
+
+            {filteredSensors.length === 0 && (
+                <p className="sx-registry-empty">
+                    {sensors.length === 0
+                        ? "No sensors have been registered yet."
+                        : "No sensors match your search or filters."}
+                </p>
+            )}
+
+            <div className="sx-registry-pagination">
+
+                <span>
+                    {filteredSensors.length === 0
+                        ? "0 devices"
+                        : `Showing ${startIndex + 1}-${Math.min(
+                            startIndex + PAGE_SIZE,
+                            filteredSensors.length
+                        )} of ${filteredSensors.length} devices`}
+                </span>
+
+                <div className="sx-registry-page-controls">
+
+                    <button
+                        type="button"
+                        disabled={currentPage <= 1}
+                        onClick={() =>
+                            onPageChange(currentPage - 1)
+                        }
+                    >
+                        Previous
+                    </button>
+
+                    <span>
+                        Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                        type="button"
+                        disabled={currentPage >= totalPages}
+                        onClick={() =>
+                            onPageChange(currentPage + 1)
+                        }
+                    >
+                        Next
+                    </button>
+
+                </div>
+            </div>
+
+        </div>
+    );
 }
+
+export default SensorList;

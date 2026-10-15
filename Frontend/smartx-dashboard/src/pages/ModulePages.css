@@ -1,0 +1,478 @@
+.sx-module-app {
+    min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at 85% 5%,
+            rgba(75, 169, 175, 0.10),
+            transparent 35%
+        ),
+        #0b1625;
+    color: #f3f8fc;
+}
+
+.sx-module-app *,
+.sx-module-app *::before,
+.sx-module-app *::after {
+    box-sizing: border-box;
+}
+
+.sx-module-main {
+    width: min(1250px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 46px 0 30px;
+}
+
+.sx-module-header {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.6fr)
+        minmax(260px, 0.8fr);
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 50px;
+}
+
+.sx-module-eyebrow,
+.sx-module-mini-label {
+    display: block;
+    color: #6ce7e0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+}
+
+.sx-module-header h1 {
+    font-size: clamp(32px, 4.5vw, 56px);
+    line-height: 1.14;
+    letter-spacing: -1.8px;
+    margin: 16px 0 20px;
+    max-width: 780px;
+}
+
+.sx-module-header h1 span {
+    color: #6ce7e0;
+}
+
+.sx-module-description {
+    color: #a4b7c9;
+    max-width: 730px;
+    font-size: 16px;
+    line-height: 1.8;
+}
+
+.sx-module-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.sx-module-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+        background-color 0.2s,
+        transform 0.2s;
+}
+
+.sx-module-button:hover {
+    transform: translateY(-2px);
+}
+
+.sx-module-button--primary {
+    background: #6ce7e0;
+    color: #101d2e;
+}
+
+.sx-module-button--primary:hover {
+    background: #9cf5ee;
+}
+
+.sx-module-button--secondary {
+    color: #e7f4fb;
+    background: #15263a;
+    border: 1px solid #34475b;
+}
+
+.sx-module-button--secondary:hover {
+    background: #1b344c;
+}
+
+.sx-module-info-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 28px;
+    border-radius: 18px;
+    background: #142337;
+    border: 1px solid #293f55;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.12);
+}
+
+.sx-module-info-icon {
+    font-size: 34px;
+    color: #6ce7e0;
+}
+
+.sx-module-info-card strong {
+    font-size: 21px;
+    line-height: 1.3;
+}
+
+.sx-module-info-card p {
+    color: #a4b7c9;
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 0;
+}
+
+.sx-module-state {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #203647;
+    color: #a9eee9;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.sx-module-section {
+    margin-bottom: 44px;
+}
+
+.sx-module-section-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 22px;
+}
+
+.sx-module-section-heading h2 {
+    margin: 9px 0;
+    font-size: clamp(23px, 3vw, 30px);
+    letter-spacing: -0.6px;
+}
+
+.sx-module-section-heading p {
+    color: #a4b7c9;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.sx-module-section-tag,
+.sx-module-phase {
+    display: inline-flex;
+    white-space: nowrap;
+    padding: 7px 11px;
+    border-radius: 7px;
+    background: #203246;
+    color: #c5d9e9;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.sx-module-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sx-module-feature-card {
+    min-height: 225px;
+    padding: 25px;
+    border: 1px solid #2a3d53;
+    border-radius: 15px;
+    background: #142338;
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
+}
+
+.sx-module-feature-card:hover {
+    border-color: #4e9b9c;
+    transform: translateY(-3px);
+}
+
+.sx-module-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 23px;
+}
+
+.sx-module-card-number {
+    font-size: 25px;
+    font-weight: 800;
+    color: #6ce7e0;
+}
+
+.sx-module-feature-card h3 {
+    margin: 0 0 12px;
+    font-size: 19px;
+}
+
+.sx-module-feature-card p {
+    color: #a4b7c9;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.sx-module-card-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-top: 17px;
+    margin-top: 22px;
+    border-top: 1px solid #304157;
+}
+
+.sx-module-card-bottom span {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #8198ad;
+}
+
+.sx-module-card-bottom strong {
+    font-size: 12px;
+    color: #a9eee9;
+}
+
+.sx-module-workflow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.sx-module-workflow-step {
+    padding: 22px;
+    border: 1px solid #293d53;
+    border-radius: 13px;
+    background: #142338;
+}
+
+.sx-module-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #203f49;
+    color: #6ce7e0;
+    font-weight: 800;
+}
+
+.sx-module-workflow-step h3 {
+    font-size: 17px;
+    margin: 18px 0 10px;
+}
+
+.sx-module-workflow-step p {
+    color: #a4b7c9;
+    font-size: 12px;
+    line-height: 1.75;
+}
+
+.sx-topology-figure {
+    margin: 0;
+}
+
+.sx-topology-diagram {
+    padding: 35px;
+    border-radius: 16px;
+    border: 1px solid #304a60;
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(108, 231, 224, 0.08),
+            transparent 55%
+        ),
+        #111f30;
+}
+
+.sx-topology-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 140px;
+    padding: 22px 15px;
+    background: #1b3045;
+    border: 1px solid #426079;
+    border-radius: 13px;
+    text-align: center;
+}
+
+.sx-topology-node--gateway {
+    width: min(100%, 350px);
+    margin: 0 auto;
+    background: #193d48;
+    border-color: #5bbcb8;
+}
+
+.sx-topology-node-icon {
+    font-size: 29px;
+    color: #6ce7e0;
+}
+
+.sx-topology-node strong {
+    color: #f3f8fc;
+    font-size: 15px;
+}
+
+.sx-topology-node small {
+    font-size: 12px;
+    color: #aac0d0;
+}
+
+.sx-topology-connector {
+    text-align: center;
+    font-size: 32px;
+    line-height: 1.8;
+    color: #6ce7e0;
+}
+
+.sx-topology-node-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.sx-topology-caption {
+    color: #8da6bb;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 12px;
+}
+
+.sx-module-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    margin-bottom: 30px;
+    border-radius: 13px;
+    border: 1px solid #3a5265;
+    background: #16283b;
+}
+
+.sx-module-notice strong {
+    font-size: 15px;
+}
+
+.sx-module-notice p {
+    color: #a4b7c9;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 0;
+}
+
+.sx-module-notice a {
+    color: #6ce7e0;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.sx-module-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 0;
+    color: #7991a7;
+    font-size: 12px;
+    border-top: 1px solid #293e50;
+}
+
+.sx-module-app a:focus-visible {
+    outline: 2px solid #6ce7e0;
+    outline-offset: 4px;
+}
+
+@media (max-width: 1000px) {
+    .sx-module-header {
+        grid-template-columns: 1fr;
+    }
+
+    .sx-module-workflow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 650px) {
+    .sx-module-main {
+        width: calc(100% - 32px);
+        padding-top: 28px;
+    }
+
+    .sx-module-header {
+        gap: 22px;
+        margin-bottom: 35px;
+    }
+
+    .sx-module-card-grid,
+    .sx-module-workflow,
+    .sx-topology-node-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sx-module-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .sx-module-actions {
+        flex-direction: column;
+    }
+
+    .sx-module-button {
+        width: 100%;
+    }
+
+    .sx-topology-diagram {
+        padding: 20px;
+    }
+
+    .sx-module-notice {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sx-module-notice a {
+        white-space: normal;
+    }
+
+    .sx-module-footer {
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sx-module-button,
+    .sx-module-feature-card {
+        transition: none;
+    }
+
+    .sx-module-button:hover,
+    .sx-module-feature-card:hover {
+        transform: none;
+    }
+}

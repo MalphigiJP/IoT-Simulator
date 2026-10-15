@@ -1,39 +1,194 @@
-/* Top navigation for the sensor registry. Sidebar styles live in TelemetryDashboard.css. */
-.sx-registry-navbar {
-  box-sizing: border-box;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding: 16px clamp(16px, 4vw, 48px);
-  background: #0d1928;
-  border-bottom: 1px solid #29374b;
-  color: #edf5ff;
+.sx-brand-x {
+    color: #6ce7e0;
 }
-.sx-registry-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 24px;
-  font-weight: 800;
-  color: #edf5ff;
-  text-decoration: none;
+
+.sx-sidebar .sx-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
-.sx-registry-brand span { color: #6ce7e0; }
-.sx-registry-navlinks { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
-.sx-registry-navlink {
-  color: #aabbd1;
-  text-decoration: none;
-  padding: 10px 13px;
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 600;
+
+.sx-sidebar .sx-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #a4b7c9;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
 }
-.sx-registry-navlink:hover { color: #fff; background: #16273a; }
-.sx-registry-navlink--active { color: #9ef0ed; background: #153b46; }
-@media (max-width: 480px) {
-  .sx-registry-navbar { align-items: flex-start; }
-  .sx-registry-navlinks { width: 100%; }
-  .sx-registry-navlink { padding: 9px 10px; }
+
+.sx-sidebar .sx-nav-link:hover {
+    background-color: rgba(108, 231, 224, 0.08);
+    color: #f3f8fc;
+}
+
+.sx-sidebar .sx-nav-link--active {
+    background-color: rgba(108, 231, 224, 0.13);
+    color: #6ce7e0;
+    font-weight: 600;
+}
+
+.sx-nav-icon {
+    flex-shrink: 0;
+    width: 20px;
+    font-size: 19px;
+    text-align: center;
+}
+
+.sx-sidebar .sx-nav-link:focus-visible,
+.sx-navbar-top-link:focus-visible {
+    outline: 2px solid #6ce7e0;
+    outline-offset: 3px;
+}
+
+.sx-navbar-top {
+    width: 100%;
+    background: #101d2e;
+    border-bottom: 1px solid rgba(164, 183, 201, 0.15);
+    position: relative;
+    z-index: 10;
+}
+
+.sx-navbar-top-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.sx-navbar-top-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #f3f8fc;
+    font-size: 23px;
+    font-weight: 800;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.sx-navbar-top-brand .sx-brand-mark {
+    color: #6ce7e0;
+}
+
+.sx-navbar-top-menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sx-navbar-top-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 9px;
+    color: #a4b7c9;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease;
+}
+
+.sx-navbar-top-link:hover {
+    background: rgba(108, 231, 224, 0.08);
+    color: #f3f8fc;
+}
+
+.sx-navbar-top-link--active {
+    background: rgba(108, 231, 224, 0.13);
+    color: #6ce7e0;
+    font-weight: 600;
+}
+
+.sx-module-preview {
+    min-height: calc(100vh - 85px);
+    padding: clamp(24px, 5vw, 64px);
+    background: #0b1625;
+    color: #f3f8fc;
+}
+
+.sx-module-preview-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.sx-module-preview-eyebrow {
+    color: #6ce7e0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.sx-module-preview h1 {
+    margin: 18px 0;
+    font-size: clamp(28px, 4vw, 46px);
+}
+
+.sx-module-preview p {
+    color: #a4b7c9;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.sx-module-preview-link {
+    display: inline-block;
+    margin-top: 22px;
+    padding: 12px 18px;
+    background: #6ce7e0;
+    color: #101d2e;
+    text-decoration: none;
+    border-radius: 9px;
+    font-weight: 700;
+}
+
+.sx-module-preview-link:hover {
+    background: #95f5ee;
+}
+
+@media (max-width: 1050px) {
+    .sx-navbar-top-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .sx-navbar-top-menu {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+}
+
+@media (max-width: 600px) {
+    .sx-navbar-top-inner {
+        padding: 14px 16px;
+    }
+
+    .sx-navbar-top-brand {
+        font-size: 21px;
+    }
+
+    .sx-navbar-top-link {
+        padding: 9px 12px;
+        font-size: 12px;
+    }
+
+    .sx-module-preview {
+        padding: 25px 18px;
+    }
 }

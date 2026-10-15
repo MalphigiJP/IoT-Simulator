@@ -11,7 +11,7 @@ import {
 import { Line } from "react-chartjs-2";
 import { getSensors, getSensorHealth } from "../api/sensorApi";
 import { getTelemetry, getSensorTelemetry } from "../api/telemetryApi";
-
+import Navbar from "../components/Navbar";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
@@ -305,7 +305,7 @@ export default function TelemetryDashboard() {
   return (
     <div className="sx-app">
       <a className="sx-skip" href="#sx-main">Skip to dashboard</a>
-      <aside className="sx-sidebar" aria-label="Dashboard navigation">
+      <Navbar variant="sidebar" />
         <a className="sx-brand" href="/telemetry"><span className="sx-brand-mark">✳</span> Smart<span>X</span></a>
         <p className="sx-sidebar-label">WORKSPACE</p>
         <nav className="sx-nav">
@@ -316,7 +316,7 @@ export default function TelemetryDashboard() {
           <div className="sx-live-dot" aria-hidden="true" />
           <div><strong>Gateway overview</strong><small>Auto-refresh · 10 seconds</small></div>
         </div>
-      </aside>
+
 
       <main id="sx-main" className="sx-main">
         <header className="sx-topbar">

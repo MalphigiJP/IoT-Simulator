@@ -168,9 +168,7 @@ The intended troubleshooting journey is simple: **notice a problem → identify 
 
 
 ### Part 2
-Phase 1: Navigation and Application State
-
-Phase 1 establishes the frontend foundation for Smart-X's real-time processing and device management features.
+## Phase 1: Navigation and Application State establishes the frontend foundation for Smart-X's real-time processing and device management features.
 
 ### Implemented Features
 - **Main Navigation:** Added navigation between Sensor Data Ingestion & Telemetry, Real-Time Command Stream & History, Network Topology & Mesh Routing, and Sensor Registry.

@@ -1,100 +1,263 @@
-﻿
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using SmartX.DeviceSimulator.Models;
+﻿using System.Net.Http;
+
 using SmartX.DeviceSimulator.Services;
 
-Console.WriteLine();
-Console.WriteLine("======================================");
-Console.WriteLine("   SMART-X IoT DEVICE SIMULATOR");
-Console.WriteLine("======================================");
-Console.WriteLine();
+// Default to the API port configured earlier.
+// Can be overridden without modifying code.
+string apiUrl =
+    Environment.GetEnvironmentVariable("SMARTX_API_URL")
+    ?? "http://localhost:5000";
 
-// Create the configured simulated devices.
-var profiles = DeviceProfileCatalog.CreateDefaults();
+// Validate the configured address.
+if (
+    !Uri.TryCreate(
+        apiUrl,
+        UriKind.Absolute,
+        out var parsedUri
+    ) ||
+    (
+        parsedUri.Scheme != Uri.UriSchemeHttp &&
+        parsedUri.Scheme != Uri.UriSchemeHttps
+    )
+)
+{
+    Console.Error.WriteLine(
+        "Invalid SMARTX_API_URL. " +
+        "Example: http://localhost:5000"
+    );
 
-var devices = profiles
+    return 1;
+}
+
+// Ensure relative API paths resolve correctly.
+string normalizedAddress =
+    apiUrl.TrimEnd('/') + "/";
+
+using var http = new HttpClient
+{
+    BaseAddress = new Uri(normalizedAddress),
+
+    Timeout = TimeSpan.FromSeconds(15)
+};
+
+var api = new SmartXApiClient(http);
+
+// Create our four independent device profiles.
+var devices = DeviceProfileCatalog
+    .CreateDefaults()
     .Select(profile => new SimulatedDevice(profile))
     .ToList();
 
-// Configure JSON to match ASP.NET Core
-// API field names and omit unused metrics.
-var jsonOptions = new JsonSerializerOptions(
-    JsonSerializerDefaults.Web)
+// Store the real SensorId assigned by SQL Server.
+var registeredDevices =
+    new List<(SimulatedDevice Device, int SensorId)>();
+
+const int readingsPerDevice = 6;
+
+int attempted = 0;
+int accepted = 0;
+int rejected = 0;
+
+Console.WriteLine();
+Console.WriteLine("==========================================");
+Console.WriteLine("       SMART-X DEVICE SIMULATOR");
+Console.WriteLine("==========================================");
+
+Console.WriteLine($"API: {normalizedAddress}");
+Console.WriteLine($"Devices: {devices.Count}");
+Console.WriteLine("Transmission: HTTP enabled");
+Console.WriteLine();
+
+try
 {
-    WriteIndented = false,
 
-    DefaultIgnoreCondition =
-        JsonIgnoreCondition.WhenWritingNull
-};
+    Console.WriteLine("STAGE 1: DEVICE REGISTRATION");
+    Console.WriteLine("------------------------------------------");
 
-int totalGenerated = 0;
-
-foreach (var device in devices)
-{
-    DeviceProfile profile = device.Profile;
-
-    Console.WriteLine("--------------------------------------");
-    Console.WriteLine($"DEVICE: {profile.Name}");
-    Console.WriteLine($"MAC: {profile.MacAddress}");
-    Console.WriteLine($"LOCATION: {profile.Location}");
-    Console.WriteLine($"CATEGORY: {profile.Category}");
-    Console.WriteLine($"TYPE: {profile.Kind}");
-    Console.WriteLine("--------------------------------------");
-
-    // Generate six readings per device.
-    for (int i = 0; i < 6; i++)
+    foreach (var device in devices)
     {
-        SimulatedTelemetry reading =
-            device.GenerateReading();
+        var profile = device.Profile;
 
-        bool hasMeasurement =
-            reading.Temperature.HasValue ||
-            reading.SoilMoisture.HasValue ||
-            reading.Wattage.HasValue ||
-            reading.ValveOpen.HasValue;
+        var result = await api.EnsureRegisteredAsync(
+            profile
+        );
 
-        if (!hasMeasurement)
-        {
-            throw new InvalidOperationException(
-                $"Device {profile.Name} generated " +
-                "an empty telemetry packet."
-            );
-        }
+        registeredDevices.Add((
+            Device: device,
+            SensorId: result.SensorId
+        ));
 
-        string json = JsonSerializer.Serialize(
-            reading,
-            jsonOptions
+        string action = result.Created
+            ? "REGISTERED"
+            : "REUSED";
+
+        Console.WriteLine(
+            $"{action}: {profile.Name}"
         );
 
         Console.WriteLine(
-            $"Reading {i + 1}: {json}"
+            $"  MAC: {profile.MacAddress}"
         );
 
-        totalGenerated++;
+        Console.WriteLine(
+            $"  Sensor ID: {result.SensorId}"
+        );
+
+        Console.WriteLine();
+    }
+
+    Console.WriteLine("STAGE 2: TELEMETRY TRANSMISSION");
+    Console.WriteLine("------------------------------------------");
+
+    // Six transmission cycles.
+    // Every device produces one reading per cycle.
+    for (int cycle = 1;
+         cycle <= readingsPerDevice;
+         cycle++)
+    {
+        Console.WriteLine();
+        Console.WriteLine(
+            $"--- TRANSMISSION CYCLE {cycle} ---"
+        );
+
+        foreach (var registered in registeredDevices)
+        {
+            // Generate telemetry using the device's
+            // existing Chunk 3.1 profile.
+            var reading = registered.Device
+                .GenerateReading() with
+            {
+                // Use the database-assigned ID.
+                SensorId = registered.SensorId
+            };
+
+            attempted++;
+
+            // Send through actual HTTP POST.
+            var result = await api.SendTelemetryAsync(
+                reading
+            );
+
+            if (result.Accepted)
+            {
+                accepted++;
+
+                Console.ForegroundColor =
+                    ConsoleColor.Green;
+
+                Console.WriteLine(
+                    $"[ACCEPTED] " +
+                    $"{registered.Device.Profile.Name}"
+                );
+
+                Console.ResetColor();
+
+                Console.WriteLine(
+                    $"  Sensor: {registered.SensorId}"
+                );
+
+                Console.WriteLine(
+                    $"  Packet: {result.PacketId}"
+                );
+
+                Console.WriteLine(
+                    $"  Attempts: {result.Attempts}"
+                );
+            }
+            else
+            {
+                rejected++;
+
+                Console.ForegroundColor =
+                    ConsoleColor.Yellow;
+
+                Console.WriteLine(
+                    $"[NOT ACCEPTED] " +
+                    $"{registered.Device.Profile.Name}"
+                );
+
+                Console.ResetColor();
+
+                Console.WriteLine(
+                    $"  Reason: {result.Message}"
+                );
+            }
+        }
+
+        // Short pause between transmission cycles.
+        // Continuous simulation comes in Chunk 3.3.
+        await Task.Delay(200);
     }
 
     Console.WriteLine();
+    Console.WriteLine("==========================================");
+    Console.WriteLine("       TRANSMISSION SUMMARY");
+    Console.WriteLine("==========================================");
+
+    Console.WriteLine(
+        $"Devices registered/reused: {registeredDevices.Count}"
+    );
+
+    Console.WriteLine(
+        $"Readings attempted: {attempted}"
+    );
+
+    Console.WriteLine(
+        $"Accepted into API queue: {accepted}"
+    );
+
+    Console.WriteLine(
+        $"Not accepted: {rejected}"
+    );
+
+    Console.WriteLine(
+        "Transport: HTTP"
+    );
+
+    Console.WriteLine(
+        "Persistence: Async background worker"
+    );
+
+    Console.WriteLine();
+    Console.WriteLine(
+        "Use Smart-X queue, live device and " +
+        "telemetry endpoints to verify processing."
+    );
+
+    return rejected == 0 ? 0 : 1;
 }
+catch (HttpRequestException ex)
+{
+    Console.Error.WriteLine();
+    Console.Error.WriteLine(
+        "HTTP communication with Smart-X failed."
+    );
 
-Console.WriteLine("======================================");
-Console.WriteLine(" SIMULATION PREVIEW COMPLETE");
-Console.WriteLine("======================================");
+    Console.Error.WriteLine(ex.Message);
 
-Console.WriteLine(
-    $"Simulated devices: {devices.Count}"
-);
+    Console.Error.WriteLine(
+        "Check that the API is running and " +
+        "SMARTX_API_URL matches its address."
+    );
 
-Console.WriteLine(
-    $"Readings generated: {totalGenerated}"
-);
+    return 1;
+}
+catch (TaskCanceledException)
+{
+    Console.Error.WriteLine();
+    Console.Error.WriteLine(
+        "The request timed out or was cancelled. " +
+        "Check API availability and database health."
+    );
 
-Console.WriteLine(
-    "Transmission: Not enabled (Chunk 3.2)"
-);
+    return 1;
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine();
+    Console.Error.WriteLine(
+        $"Simulation failed: {ex.Message}"
+    );
 
-Console.WriteLine(
-    "Database writes: None"
-);
-
-Console.WriteLine();
+    return 1;
+}

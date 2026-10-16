@@ -9,7 +9,7 @@ try
 catch (Exception ex)
 {
     Console.Error.WriteLine(
-        $"Invalid simulator configuration: {ex.Message}"
+        $"Configuration error: {ex.Message}"
     );
 
     return 1;
@@ -17,20 +17,18 @@ catch (Exception ex)
 
 using var cancellation = new CancellationTokenSource();
 
-ConsoleCancelEventHandler cancelHandler = (
-    sender,
-    eventArgs) =>
-{
-    // Prevent an abrupt console termination.
-    eventArgs.Cancel = true;
+ConsoleCancelEventHandler cancelHandler =
+    (sender, eventArgs) =>
+    {
+        eventArgs.Cancel = true;
 
-    Console.WriteLine();
-    Console.WriteLine(
-        "Shutdown requested. Stopping simulated devices..."
-    );
+        Console.WriteLine();
+        Console.WriteLine(
+            "Shutdown requested..."
+        );
 
-    cancellation.Cancel();
-};
+        cancellation.Cancel();
+    };
 
 Console.CancelKeyPress += cancelHandler;
 
@@ -50,35 +48,57 @@ try
 
     var devices = DeviceProfileCatalog
         .CreateDefaults()
-        .Select(
-            profile => new SimulatedDevice(profile)
-        )
+        .Select(profile => new SimulatedDevice(profile))
         .ToList();
 
     Console.WriteLine();
     Console.WriteLine("=========================================");
-    Console.WriteLine("       SMART-X IOT DEVICE FLEET");
+    Console.WriteLine("       SMART-X DEVICE SIMULATOR");
     Console.WriteLine("=========================================");
 
+    Console.WriteLine($"API: {settings.ApiUrl}");
+
+    Console.WriteLine($"Devices: {devices.Count}");
+
     Console.WriteLine(
-        $"API: {settings.ApiUrl}"
+        $"Fault injection: " +
+        $"{(settings.FaultsEnabled ? "ENABLED" : "DISABLED")}"
     );
 
     Console.WriteLine(
-        $"Configured devices: {devices.Count}"
+        $"Device outage: " +
+        $"{(settings.OutageEnabled ? "ENABLED" : "DISABLED")}"
     );
+
+    if (settings.FaultsEnabled)
+    {
+        Console.WriteLine(
+            $"Fault frequency: every " +
+            $"{settings.FaultEveryN} readings per device"
+        );
+    }
+
+    if (settings.OutageEnabled)
+    {
+        Console.WriteLine(
+            $"Outage target: {settings.OutageDevice}"
+        );
+
+        Console.WriteLine(
+            $"Outage starts after: " +
+            $"{settings.OutageAfterReadings} readings"
+        );
+
+        Console.WriteLine(
+            $"Outage duration: " +
+            $"{settings.OutageSeconds} seconds"
+        );
+    }
 
     Console.WriteLine(
         settings.DurationSeconds == 0
-            ? "Duration: Continuous (Ctrl+C to stop)"
+            ? "Duration: Unlimited"
             : $"Duration: {settings.DurationSeconds} seconds"
-    );
-
-    Console.WriteLine(
-        settings.MaxReadingsPerDevice == 0
-            ? "Readings per device: Unlimited"
-            : "Readings per device: " +
-              settings.MaxReadingsPerDevice
     );
 
     Console.WriteLine();
@@ -86,13 +106,9 @@ try
     var registeredDevices =
         new List<(SimulatedDevice Device, int SensorId)>();
 
-    Console.WriteLine("STAGE 1: DEVICE REGISTRATION");
-    Console.WriteLine("-----------------------------------------");
-
-
     foreach (var device in devices)
     {
-        var registrationResult =
+        var registration =
             await api.EnsureRegisteredAsync(
                 device.Profile,
                 cancellation.Token
@@ -100,93 +116,56 @@ try
 
         registeredDevices.Add((
             Device: device,
-            SensorId: registrationResult.SensorId
+            SensorId: registration.SensorId
         ));
 
-        string action = registrationResult.Created
-            ? "REGISTERED"
-            : "REUSED";
-
-        var interval = settings.GetInterval(
-            device.Profile.Kind
-        );
-
         Console.WriteLine(
-            $"{action}: {device.Profile.Name}"
-        );
-
-        Console.WriteLine(
-            $"  Sensor ID: {registrationResult.SensorId}"
-        );
-
-        Console.WriteLine(
-            $"  MAC: {device.Profile.MacAddress}"
-        );
-
-        Console.WriteLine(
-            $"  Reporting interval: " +
-            $"{interval.TotalMilliseconds:0} ms"
+            $"[{(registration.Created ? "REGISTERED" : "REUSED")}] " +
+            $"{device.Profile.Name} | " +
+            $"Sensor {registration.SensorId}"
         );
     }
-
-
-    Console.WriteLine();
-
-    Console.WriteLine("STAGE 2: LIVE TELEMETRY");
-    Console.WriteLine("-----------------------------------------");
 
     var statistics = new SimulationStatistics();
 
-    // Duration starts after registration.
     if (settings.DurationSeconds > 0)
     {
         cancellation.CancelAfter(
-            TimeSpan.FromSeconds(
-                settings.DurationSeconds
-            )
+            TimeSpan.FromSeconds(settings.DurationSeconds)
         );
     }
 
-    // Start one independent asynchronous
-    // simulation loop for each registered device.
     var runners = registeredDevices
         .Select(registered =>
-        {
-            return new DeviceSimulationRunner(
+            new DeviceSimulationRunner(
                 registered.Device,
                 registered.SensorId,
                 api,
                 statistics,
-
-                settings.GetInterval(
-                    registered.Device.Profile.Kind
-                ),
-
-                settings.MaxReadingsPerDevice
-            );
-        })
+                settings
+            )
+        )
         .ToList();
 
-    // Periodically print fleet-wide statistics.
+    Console.WriteLine();
+    Console.WriteLine("STARTING LIVE DEVICE TRANSMISSION");
+    Console.WriteLine("-----------------------------------------");
+
     var reportingTask = ReportStatisticsAsync(
         statistics,
         cancellation.Token
     );
 
-    // Start every device loop.
     var deviceTasks = runners
-        .Select(
-            runner => runner.RunAsync(
-                cancellation.Token
-            )
+        .Select(runner =>
+            runner.RunAsync(cancellation.Token)
         )
         .ToArray();
 
-    // Await every device concurrently.
     await Task.WhenAll(deviceTasks);
 
-    // Devices may finish naturally when a
-    // maximum reading count is configured.
+    // Stop the statistics reporter after the
+    // fleet finishes or its duration expires.
     cancellation.Cancel();
 
     await reportingTask;
@@ -197,10 +176,6 @@ try
     Console.WriteLine("=========================================");
     Console.WriteLine("          SIMULATION SUMMARY");
     Console.WriteLine("=========================================");
-
-    Console.WriteLine(
-        $"Devices: {registeredDevices.Count}"
-    );
 
     Console.WriteLine(
         $"Readings attempted: {finalStats.Attempted}"
@@ -215,23 +190,35 @@ try
     );
 
     Console.WriteLine(
-        $"Other HTTP rejections: {finalStats.Rejected}"
+        $"Other rejections: {finalStats.Rejected}"
     );
 
     Console.WriteLine(
         $"Transmission errors: {finalStats.Errors}"
     );
 
-    Console.WriteLine();
     Console.WriteLine(
-        "HTTP 202 confirms queue acceptance, not database persistence."
+        $"Injected abnormal readings: {finalStats.InjectedFaults}"
     );
 
     Console.WriteLine(
-        "Check /api/telemetry/queue/status for processing results."
+        $"Outages started: {finalStats.OutagesStarted}"
+    );
+
+    Console.WriteLine(
+        $"Outage pauses completed: {finalStats.OutagesRecovered}"
     );
 
     Console.WriteLine();
+    Console.WriteLine(
+        "HTTP 202 confirms queue acceptance, " +
+        "not database persistence."
+    );
+
+    Console.WriteLine(
+        "Check /api/alerts/active and " +
+        "/api/telemetry/queue/status."
+    );
 
     return (
         finalStats.QueueFull == 0 &&
@@ -243,7 +230,7 @@ catch (OperationCanceledException)
     when (cancellation.IsCancellationRequested)
 {
     Console.WriteLine(
-        "Simulation stopped during startup."
+        "Simulation cancelled during startup."
     );
 
     return 0;
@@ -251,7 +238,7 @@ catch (OperationCanceledException)
 catch (HttpRequestException ex)
 {
     Console.Error.WriteLine(
-        $"Unable to communicate with Smart-X: {ex.Message}"
+        $"API connection failed: {ex.Message}"
     );
 
     return 1;
@@ -281,11 +268,8 @@ static async Task ReportStatisticsAsync(
 
     try
     {
-        while (
-            await timer.WaitForNextTickAsync(
-                cancellationToken
-            )
-        )
+        while (await timer.WaitForNextTickAsync(
+            cancellationToken))
         {
             var snapshot = statistics.GetSnapshot();
 
@@ -300,6 +284,18 @@ static async Task ReportStatisticsAsync(
 
             Console.WriteLine(
                 $"Accepted: {snapshot.Accepted}"
+            );
+
+            Console.WriteLine(
+                $"Faults injected: {snapshot.InjectedFaults}"
+            );
+
+            Console.WriteLine(
+                $"Outages started: {snapshot.OutagesStarted}"
+            );
+
+            Console.WriteLine(
+                $"Outage pauses completed: {snapshot.OutagesRecovered}"
             );
 
             Console.WriteLine(
@@ -321,6 +317,6 @@ static async Task ReportStatisticsAsync(
     catch (OperationCanceledException)
         when (cancellationToken.IsCancellationRequested)
     {
-        // Expected when the simulation stops.
+        // Normal shutdown.
     }
 }

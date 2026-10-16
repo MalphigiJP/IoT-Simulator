@@ -5,15 +5,13 @@ namespace SmartX.DeviceSimulator.Services;
 public sealed class DeviceSimulationRunner
 {
     private readonly SimulatedDevice _device;
-
     private readonly int _sensorId;
-
     private readonly SmartXApiClient _api;
-
     private readonly SimulationStatistics _statistics;
+    private readonly SimulationSettings _settings;
+    private readonly FaultInjectionEngine _faultEngine;
 
     private readonly TimeSpan _interval;
-
     private readonly int _maxReadings;
 
     public DeviceSimulationRunner(
@@ -21,21 +19,31 @@ public sealed class DeviceSimulationRunner
         int sensorId,
         SmartXApiClient api,
         SimulationStatistics statistics,
-        TimeSpan interval,
-        int maxReadings)
+        SimulationSettings settings)
     {
         _device = device;
         _sensorId = sensorId;
         _api = api;
         _statistics = statistics;
-        _interval = interval;
-        _maxReadings = maxReadings;
+        _settings = settings;
+
+        _faultEngine = new FaultInjectionEngine(settings);
+
+        _interval = settings.GetInterval(
+            device.Profile.Kind
+        );
+
+        _maxReadings =
+            settings.MaxReadingsPerDevice;
     }
 
     public async Task RunAsync(
         CancellationToken cancellationToken)
     {
         int readingsAttempted = 0;
+
+        // An outage occurs once per simulation run.
+        bool outageTriggered = false;
 
         using var timer = new PeriodicTimer(
             _interval
@@ -55,55 +63,140 @@ public sealed class DeviceSimulationRunner
             )
         )
         {
-            // Generate a new reading using
-            // the device's existing profile.
-            SimulatedTelemetry reading =
-                _device.GenerateReading() with
+
+            bool shouldDisconnect =
+                _settings.OutageEnabled &&
+                !outageTriggered &&
+                _device.Profile.Kind ==
+                    _settings.OutageDevice &&
+                readingsAttempted >=
+                    _settings.OutageAfterReadings;
+
+            if (shouldDisconnect)
+            {
+                outageTriggered = true;
+
+                _statistics.RecordOutageStarted();
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    $"[DEVICE OFFLINE] {_device.Profile.Name}"
+                );
+
+                Console.WriteLine(
+                    $"  Pausing HTTP transmission for " +
+                    $"{_settings.OutageSeconds} seconds."
+                );
+
+                // No requests are sent by this device
+                // during the outage. Other devices
+                // continue independently.
+                try
                 {
-                    SensorId = _sensorId
-                };
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(
+                            _settings.OutageSeconds
+                        ),
+                        cancellationToken
+                    );
+                }
+                catch (OperationCanceledException)
+                    when (cancellationToken.IsCancellationRequested)
+                {
+                    Console.WriteLine(
+                        $"[OUTAGE INTERRUPTED] " +
+                        $"{_device.Profile.Name}"
+                    );
+
+                    break;
+                }
+
+                _statistics.RecordOutageRecovered();
+
+                Console.WriteLine(
+                    $"[DEVICE RECONNECTED] " +
+                    $"{_device.Profile.Name}"
+                );
+
+                Console.WriteLine(
+                    "  Resuming HTTP transmission."
+                );
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            var normalReading = _device
+                .GenerateReading() with
+            {
+                SensorId = _sensorId
+            };
 
             readingsAttempted++;
+
+            var injection = _faultEngine.Apply(
+                _device.Profile.Kind,
+                normalReading,
+                readingsAttempted
+            );
+
+            if (injection.HasFault)
+            {
+                _statistics.RecordInjectedFault();
+
+                Console.WriteLine();
+                Console.WriteLine(
+                    $"[FAULT INJECTED] " +
+                    $"{_device.Profile.Name}"
+                );
+
+                Console.WriteLine(
+                    $"  {injection.Description}"
+                );
+
+                Console.WriteLine(
+                    $"  Reading number: {readingsAttempted}"
+                );
+            }
 
             _statistics.RecordAttempt();
 
             try
             {
-                var result = await _api.SendTelemetryAsync(
-                    reading,
+                var sendResult = await _api.SendTelemetryAsync(
+                    injection.Reading,
                     cancellationToken
                 );
 
-                _statistics.RecordResult(result);
+                _statistics.RecordResult(sendResult);
 
-                if (result.Accepted)
+                if (sendResult.Accepted)
                 {
                     Console.WriteLine(
                         $"[ACCEPTED] {_device.Profile.Name} | " +
-                        $"Packet {result.PacketId} | " +
-                        $"HTTP attempts: {result.Attempts}"
+                        $"Packet {sendResult.PacketId}"
                     );
                 }
-                else if (result.QueueFull)
+                else if (sendResult.QueueFull)
                 {
                     Console.WriteLine(
                         $"[QUEUE FULL] {_device.Profile.Name} | " +
-                        $"HTTP 429 after {result.Attempts} attempts"
+                        $"HTTP 429"
                     );
                 }
                 else
                 {
                     Console.WriteLine(
                         $"[REJECTED] {_device.Profile.Name} | " +
-                        result.Message
+                        sendResult.Message
                     );
                 }
             }
             catch (OperationCanceledException)
                 when (cancellationToken.IsCancellationRequested)
             {
-                // User requested shutdown or
-                // the configured duration expired.
                 break;
             }
             catch (HttpRequestException ex)
@@ -117,8 +210,6 @@ public sealed class DeviceSimulationRunner
             }
             catch (TaskCanceledException)
             {
-                // Usually indicates an HTTP timeout
-                // rather than a requested shutdown.
                 _statistics.RecordError();
 
                 Console.WriteLine(
@@ -145,12 +236,8 @@ public sealed class DeviceSimulationRunner
 
             try
             {
-                bool nextTick =
-                    await timer.WaitForNextTickAsync(
-                        cancellationToken
-                    );
-
-                if (!nextTick)
+                if (!await timer.WaitForNextTickAsync(
+                    cancellationToken))
                 {
                     break;
                 }

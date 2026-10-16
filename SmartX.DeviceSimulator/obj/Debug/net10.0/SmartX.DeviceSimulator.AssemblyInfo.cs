@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartX.DeviceSimulator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5400228e491f489e0267fb90a12130eddb4f920c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+900635dcb678da7acecd226415a712d58b17e3f7")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartX.DeviceSimulator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartX.DeviceSimulator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

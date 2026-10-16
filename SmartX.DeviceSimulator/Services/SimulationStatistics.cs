@@ -1,16 +1,16 @@
+
 namespace SmartX.DeviceSimulator.Services;
 
 public sealed record SimulationStatisticsSnapshot
 {
     public long Attempted { get; init; }
-
     public long Accepted { get; init; }
-
     public long QueueFull { get; init; }
-
     public long Rejected { get; init; }
-
     public long Errors { get; init; }
+    public long InjectedFaults { get; init; }
+    public long OutagesStarted { get; init; }
+    public long OutagesRecovered { get; init; }
 }
 
 public sealed class SimulationStatistics
@@ -20,6 +20,10 @@ public sealed class SimulationStatistics
     private long _queueFull;
     private long _rejected;
     private long _errors;
+
+    private long _injectedFaults;
+    private long _outagesStarted;
+    private long _outagesRecovered;
 
     public void RecordAttempt()
     {
@@ -48,29 +52,39 @@ public sealed class SimulationStatistics
         Interlocked.Increment(ref _errors);
     }
 
+    public void RecordInjectedFault()
+    {
+        Interlocked.Increment(ref _injectedFaults);
+    }
+
+    public void RecordOutageStarted()
+    {
+        Interlocked.Increment(ref _outagesStarted);
+    }
+
+    public void RecordOutageRecovered()
+    {
+        Interlocked.Increment(ref _outagesRecovered);
+    }
+
     public SimulationStatisticsSnapshot GetSnapshot()
     {
         return new SimulationStatisticsSnapshot
         {
-            Attempted = Interlocked.Read(
-                ref _attempted
-            ),
+            Attempted = Interlocked.Read(ref _attempted),
+            Accepted = Interlocked.Read(ref _accepted),
+            QueueFull = Interlocked.Read(ref _queueFull),
+            Rejected = Interlocked.Read(ref _rejected),
+            Errors = Interlocked.Read(ref _errors),
 
-            Accepted = Interlocked.Read(
-                ref _accepted
-            ),
+            InjectedFaults =
+                Interlocked.Read(ref _injectedFaults),
 
-            QueueFull = Interlocked.Read(
-                ref _queueFull
-            ),
+            OutagesStarted =
+                Interlocked.Read(ref _outagesStarted),
 
-            Rejected = Interlocked.Read(
-                ref _rejected
-            ),
-
-            Errors = Interlocked.Read(
-                ref _errors
-            )
+            OutagesRecovered =
+                Interlocked.Read(ref _outagesRecovered)
         };
     }
 }

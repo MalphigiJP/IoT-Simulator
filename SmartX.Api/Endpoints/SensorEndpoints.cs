@@ -1,5 +1,5 @@
-
 using Microsoft.EntityFrameworkCore;
+
 using SmartX.Api.Data;
 using SmartX.Api.DTOs;
 using SmartX.Api.Models;
@@ -15,20 +15,18 @@ public static class SensorEndpoints
         var group = app.MapGroup("/api/sensors")
             .WithTags("Sensors");
 
-        // GET ALL REGISTERED SENSORS
-        // GET /api/sensors
         group.MapGet("/", async (
             SensorService service,
             CancellationToken cancellationToken) =>
         {
             var sensors = await service.GetAllAsync(
-                cancellationToken);
+                cancellationToken
+            );
 
             return Results.Ok(sensors);
         })
         .WithName("GetSensors");
 
-        // GET SENSOR HEALTH
         group.MapGet("/health", async (
             SmartXContext db,
             CancellationToken cancellationToken) =>
@@ -38,6 +36,7 @@ public static class SensorEndpoints
                 .Select(sensor => new
                 {
                     Sensor = sensor,
+
                     LastTelemetry = sensor.TelemetryRecords
                         .OrderByDescending(t => t.Timestamp)
                         .Select(t => (DateTime?)t.Timestamp)
@@ -52,7 +51,7 @@ public static class SensorEndpoints
                 var sensor = item.Sensor;
                 var lastTelemetry = item.LastTelemetry;
 
-                if (lastTelemetry == null)
+                if (lastTelemetry is null)
                 {
                     return new SensorHealthDto
                     {
@@ -86,13 +85,13 @@ public static class SensorEndpoints
                     LastTelemetry = lastTelemetry,
                     SecondsSinceLastTelemetry = secondsSince
                 };
+
             }).ToList();
 
             return Results.Ok(result);
         })
         .WithName("GetSensorHealth");
 
-        // GET SENSOR BY ID
         group.MapGet("/{id:int}", async (
             int id,
             SmartXContext db,
@@ -102,7 +101,8 @@ public static class SensorEndpoints
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
                     s => s.Id == id,
-                    cancellationToken);
+                    cancellationToken
+                );
 
             return sensor is null
                 ? Results.NotFound()
@@ -110,15 +110,18 @@ public static class SensorEndpoints
         })
         .WithName("GetSensorById");
 
-        // REGISTER A SENSOR
         group.MapPost("/", async (
             CreateSensorDto dto,
             SmartXContext db,
+            DeviceRegistry registry,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(dto.MacAddress) ||
+            // Validate required fields.
+            if (
+                string.IsNullOrWhiteSpace(dto.MacAddress) ||
                 string.IsNullOrWhiteSpace(dto.Location) ||
-                string.IsNullOrWhiteSpace(dto.Category))
+                string.IsNullOrWhiteSpace(dto.Category)
+            )
             {
                 return Results.BadRequest(new
                 {
@@ -127,9 +130,13 @@ public static class SensorEndpoints
                 });
             }
 
+            string macAddress = dto.MacAddress.Trim();
+
+            // Prevent duplicate MAC addresses.
             var exists = await db.Sensors.AnyAsync(
-                s => s.MacAddress == dto.MacAddress,
-                cancellationToken);
+                s => s.MacAddress == macAddress,
+                cancellationToken
+            );
 
             if (exists)
             {
@@ -142,7 +149,7 @@ public static class SensorEndpoints
 
             var sensor = new Sensor
             {
-                MacAddress = dto.MacAddress.Trim(),
+                MacAddress = macAddress,
                 Location = dto.Location.Trim(),
                 Category = dto.Category.Trim(),
                 RegisteredAt = DateTime.UtcNow
@@ -150,25 +157,32 @@ public static class SensorEndpoints
 
             db.Sensors.Add(sensor);
 
-            await db.SaveChangesAsync(cancellationToken);
+            // Save permanently first.
+            await db.SaveChangesAsync(
+                cancellationToken
+            );
+
+            // Register in the live device dictionary.
+            registry.UpsertSensor(sensor);
 
             return Results.Created(
                 $"/api/sensors/{sensor.Id}",
-                sensor);
+                sensor
+            );
         })
         .WithName("CreateSensor");
 
-        // UPDATE A SENSOR
-        // PUT /api/sensors/{id}
         group.MapPut("/{id:int}", async (
             int id,
             UpdateSensorDto dto,
             SmartXContext db,
+            DeviceRegistry registry,
             CancellationToken cancellationToken) =>
         {
             var sensor = await db.Sensors.FindAsync(
                 new object[] { id },
-                cancellationToken);
+                cancellationToken
+            );
 
             if (sensor is null)
             {
@@ -178,9 +192,12 @@ public static class SensorEndpoints
                 });
             }
 
-            if (string.IsNullOrWhiteSpace(dto.MacAddress) ||
+            // Validate required fields.
+            if (
+                string.IsNullOrWhiteSpace(dto.MacAddress) ||
                 string.IsNullOrWhiteSpace(dto.Location) ||
-                string.IsNullOrWhiteSpace(dto.Category))
+                string.IsNullOrWhiteSpace(dto.Category)
+            )
             {
                 return Results.BadRequest(new
                 {
@@ -189,10 +206,14 @@ public static class SensorEndpoints
                 });
             }
 
+            string macAddress = dto.MacAddress.Trim();
+
+            // Prevent duplicate MAC addresses.
             var duplicate = await db.Sensors.AnyAsync(
-                s => s.MacAddress == dto.MacAddress &&
+                s => s.MacAddress == macAddress &&
                      s.Id != id,
-                cancellationToken);
+                cancellationToken
+            );
 
             if (duplicate)
             {
@@ -203,32 +224,52 @@ public static class SensorEndpoints
                 });
             }
 
-            sensor.MacAddress = dto.MacAddress.Trim();
+            // Update sensor metadata.
+            sensor.MacAddress = macAddress;
             sensor.Location = dto.Location.Trim();
             sensor.Category = dto.Category.Trim();
 
-            await db.SaveChangesAsync(cancellationToken);
+            // Save changes to SQL Server.
+            await db.SaveChangesAsync(
+                cancellationToken
+            );
+
+            // Synchronise the live device registry.
+            // Existing telemetry state is preserved.
+            registry.UpsertSensor(sensor);
 
             return Results.Ok(sensor);
         })
         .WithName("UpdateSensor");
 
-        // DELETE A SENSOR
         group.MapDelete("/{id:int}", async (
             int id,
             SmartXContext db,
+            DeviceRegistry registry,
             CancellationToken cancellationToken) =>
         {
             var sensor = await db.Sensors.FindAsync(
                 new object[] { id },
-                cancellationToken);
+                cancellationToken
+            );
 
             if (sensor is null)
-                return Results.NotFound();
+            {
+                return Results.NotFound(new
+                {
+                    message = "Sensor not found."
+                });
+            }
 
+            // Delete permanently from SQL Server.
             db.Sensors.Remove(sensor);
 
-            await db.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(
+                cancellationToken
+            );
+
+            // Remove from the live dictionary.
+            registry.RemoveSensor(id);
 
             return Results.NoContent();
         })

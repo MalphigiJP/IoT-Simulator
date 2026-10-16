@@ -1,7 +1,7 @@
-
 using SmartX.Api.Models;
 
 namespace SmartX.Api.Services;
+
 
 public sealed record TelemetryQueueStatus
 {
@@ -22,71 +22,203 @@ public sealed record TelemetryQueueStatus
     public long Rejected { get; init; }
 
     public DateTime? LastProcessedUtc { get; init; }
+
+    // Priority-specific statistics
+    public int NormalWaiting { get; init; }
+
+    public int CriticalWaiting { get; init; }
+
+    public int EmergencyWaiting { get; init; }
+
+    public int ReservedPrioritySlots { get; init; }
+
+    public long NormalAccepted { get; init; }
+
+    public long CriticalAccepted { get; init; }
+
+    public long EmergencyAccepted { get; init; }
+
+    public long NormalProcessed { get; init; }
+
+    public long CriticalProcessed { get; init; }
+
+    public long EmergencyProcessed { get; init; }
 }
+
 
 public sealed class TelemetryQueue : IDisposable
 {
-    // Maximum packets awaiting processing.
     public const int MaxCapacity = 5000;
 
-    // FIFO data structure required by Part 2.
-    private readonly Queue<QueuedTelemetry> _queue = new();
+    public const int PriorityReserve = 500;
 
-    // Protects access from concurrent API requests.
+    public const int MaxConsecutivePriority = 10;
+
+    // Standard FIFO telemetry.
+    private readonly Queue<QueuedTelemetry>
+        _normalQueue = new();
+
+    // Critical and emergency telemetry.
+    private readonly PriorityQueue<
+        QueuedTelemetry,
+        (int Level, long Sequence)
+    > _priorityQueue = new();
+
+    // Synchronisation for concurrent requests.
     private readonly object _sync = new();
 
-    // Signals the worker when packets become available.
+    // Signals that a packet is available.
     private readonly SemaphoreSlim _signal = new(0);
 
+    private long _sequence;
+
+    private int _consecutivePriority;
+
     private int _processing;
+
     private int _highWatermark;
 
+    private int _criticalWaiting;
+
+    private int _emergencyWaiting;
+
     private long _accepted;
+
     private long _processed;
+
     private long _failed;
+
     private long _rejected;
+
+    private long _normalAccepted;
+
+    private long _criticalAccepted;
+
+    private long _emergencyAccepted;
+
+    private long _normalProcessed;
+
+    private long _criticalProcessed;
+
+    private long _emergencyProcessed;
 
     private DateTime? _lastProcessedUtc;
 
     public bool TryEnqueue(QueuedTelemetry packet)
     {
+        ArgumentNullException.ThrowIfNull(packet);
+
         return TryEnqueueBatch(new[] { packet });
     }
 
     public bool TryEnqueueBatch(
         IReadOnlyList<QueuedTelemetry> packets)
     {
+        ArgumentNullException.ThrowIfNull(packets);
+
         if (packets.Count == 0)
         {
             return true;
         }
 
+        // Classify packets before acquiring lock.
+        var classified = packets
+            .Select(packet => (
+                Packet: packet,
+                Priority:
+                    TelemetryPriorityClassifier.Classify(packet)
+            ))
+            .ToArray();
+
+        int normalIncoming = classified.Count(
+            item =>
+                item.Priority == TelemetryPriority.Normal
+        );
+
         lock (_sync)
         {
-            int remainingCapacity =
-                MaxCapacity - _queue.Count;
+            int totalWaiting =
+                _normalQueue.Count +
+                _priorityQueue.Count;
 
-            // Reject the entire batch if it cannot fit.
-            if (packets.Count > remainingCapacity)
+            int projectedWaiting =
+                totalWaiting + classified.Length;
+
+            // Never exceed total capacity.
+            if (projectedWaiting > MaxCapacity)
             {
-                _rejected += packets.Count;
+                _rejected += classified.Length;
                 return false;
             }
 
-            foreach (var packet in packets)
+            // Reserve capacity for urgent telemetry.
+            int projectedNormalWaiting =
+                _normalQueue.Count + normalIncoming;
+
+            if (
+                projectedNormalWaiting >
+                MaxCapacity - PriorityReserve
+            )
             {
-                _queue.Enqueue(packet);
+                _rejected += classified.Length;
+                return false;
             }
 
-            _accepted += packets.Count;
+            foreach (var item in classified)
+            {
+                var packet = item.Packet;
+
+                switch (item.Priority)
+                {
+                    case TelemetryPriority.Emergency:
+
+                        _priorityQueue.Enqueue(
+                            packet,
+                            (
+                                (int)TelemetryPriority.Emergency,
+                                ++_sequence
+                            )
+                        );
+
+                        _emergencyWaiting++;
+                        _emergencyAccepted++;
+
+                        break;
+
+                    case TelemetryPriority.Critical:
+
+                        _priorityQueue.Enqueue(
+                            packet,
+                            (
+                                (int)TelemetryPriority.Critical,
+                                ++_sequence
+                            )
+                        );
+
+                        _criticalWaiting++;
+                        _criticalAccepted++;
+
+                        break;
+
+                    default:
+
+                        _normalQueue.Enqueue(packet);
+
+                        _normalAccepted++;
+
+                        break;
+                }
+            }
+
+            _accepted += classified.Length;
 
             _highWatermark = Math.Max(
                 _highWatermark,
-                _queue.Count
+                projectedWaiting
             );
 
             // Wake the background worker.
-            _signal.Release(packets.Count);
+            _signal.Release(classified.Length);
 
             return true;
         }
@@ -95,12 +227,57 @@ public sealed class TelemetryQueue : IDisposable
     public async Task<QueuedTelemetry> DequeueAsync(
         CancellationToken cancellationToken)
     {
-        // Wait without busy-looping.
         await _signal.WaitAsync(cancellationToken);
 
         lock (_sync)
         {
-            var packet = _queue.Dequeue();
+            bool priorityAvailable =
+                _priorityQueue.Count > 0;
+
+            bool normalAvailable =
+                _normalQueue.Count > 0;
+
+            // Prioritise emergencies and critical
+            // packets, while preventing starvation.
+            bool selectPriority =
+                priorityAvailable &&
+                (
+                    !normalAvailable ||
+                    _consecutivePriority <
+                        MaxConsecutivePriority
+                );
+
+            QueuedTelemetry packet;
+
+            if (selectPriority)
+            {
+                packet = _priorityQueue.Dequeue();
+
+                var priority =
+                    TelemetryPriorityClassifier.Classify(
+                        packet
+                    );
+
+                if (
+                    priority ==
+                    TelemetryPriority.Emergency
+                )
+                {
+                    _emergencyWaiting--;
+                }
+                else
+                {
+                    _criticalWaiting--;
+                }
+
+                _consecutivePriority++;
+            }
+            else
+            {
+                packet = _normalQueue.Dequeue();
+
+                _consecutivePriority = 0;
+            }
 
             _processing++;
 
@@ -108,22 +285,49 @@ public sealed class TelemetryQueue : IDisposable
         }
     }
 
-    public void MarkProcessed()
+    public void MarkProcessed(
+        QueuedTelemetry packet)
     {
+        var priority =
+            TelemetryPriorityClassifier.Classify(packet);
+
         lock (_sync)
         {
             _processing--;
+
             _processed++;
 
             _lastProcessedUtc = DateTime.UtcNow;
+
+            switch (priority)
+            {
+                case TelemetryPriority.Emergency:
+
+                    _emergencyProcessed++;
+                    break;
+
+                case TelemetryPriority.Critical:
+
+                    _criticalProcessed++;
+                    break;
+
+                default:
+
+                    _normalProcessed++;
+                    break;
+            }
         }
     }
 
-    public void MarkFailed()
+    public void MarkFailed(
+        QueuedTelemetry packet)
     {
+        ArgumentNullException.ThrowIfNull(packet);
+
         lock (_sync)
         {
             _processing--;
+
             _failed++;
         }
     }
@@ -136,7 +340,9 @@ public sealed class TelemetryQueue : IDisposable
             {
                 Capacity = MaxCapacity,
 
-                Waiting = _queue.Count,
+                Waiting =
+                    _normalQueue.Count +
+                    _priorityQueue.Count,
 
                 Processing = _processing,
 
@@ -150,7 +356,38 @@ public sealed class TelemetryQueue : IDisposable
 
                 Rejected = _rejected,
 
-                LastProcessedUtc = _lastProcessedUtc
+                LastProcessedUtc =
+                    _lastProcessedUtc,
+
+                NormalWaiting =
+                    _normalQueue.Count,
+
+                CriticalWaiting =
+                    _criticalWaiting,
+
+                EmergencyWaiting =
+                    _emergencyWaiting,
+
+                ReservedPrioritySlots =
+                    PriorityReserve,
+
+                NormalAccepted =
+                    _normalAccepted,
+
+                CriticalAccepted =
+                    _criticalAccepted,
+
+                EmergencyAccepted =
+                    _emergencyAccepted,
+
+                NormalProcessed =
+                    _normalProcessed,
+
+                CriticalProcessed =
+                    _criticalProcessed,
+
+                EmergencyProcessed =
+                    _emergencyProcessed
             };
         }
     }

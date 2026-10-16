@@ -43,8 +43,11 @@ builder.Services.AddDbContext<SmartXContext>(options =>
 
 builder.Services.AddScoped<SensorService>();
 builder.Services.AddScoped<TelemetrySeeder>();
+builder.Services.AddSingleton<DeviceRegistry>();
+builder.Services.AddHostedService<DeviceRegistryInitializer>();
 builder.Services.AddSingleton<TelemetryQueue>();
 builder.Services.AddHostedService<TelemetryQueueWorker>();
+
 
 var app = builder.Build();
 
@@ -291,6 +294,79 @@ app.MapGet("/api/telemetry/queue/status",
     })
     .WithTags("Telemetry")
     .WithName("GetTelemetryQueueStatus");
+
+
+// ==========================================
+// PART 2 - LIVE DEVICE REGISTRY API
+// ==========================================
+
+// GET ALL LIVE DEVICE SNAPSHOTS
+app.MapGet("/api/devices/live",
+    (DeviceRegistry registry) =>
+    {
+        var now = DateTime.UtcNow;
+
+        var devices = registry.GetAll()
+            .Select(device => new
+            {
+                device.SensorId,
+                device.MacAddress,
+                device.Location,
+                device.Category,
+
+                device.Temperature,
+                device.SoilMoisture,
+                device.Wattage,
+                device.ValveOpen,
+
+                device.LastSampleTimestampUtc,
+                device.LastReceivedAtUtc,
+
+                device.PacketsProcessed,
+
+                ConnectionStatus =
+                    DeviceRegistry.GetConnectionStatus(
+                        device,
+                        now
+                    )
+            })
+            .ToList();
+
+        return Results.Ok(devices);
+    })
+    .WithTags("Live Devices")
+    .WithName("GetLiveDevices");
+
+// GET DEVICE BY MAC ADDRESS
+app.MapGet("/api/devices/live/{macAddress}",
+    (
+        string macAddress,
+        DeviceRegistry registry
+    ) =>
+    {
+        if (!registry.TryGetByMac(
+            macAddress,
+            out var device))
+        {
+            return Results.NotFound(new
+            {
+                message =
+                    "Device not found in live registry."
+            });
+        }
+
+        return Results.Ok(new
+        {
+            device,
+            connectionStatus =
+                DeviceRegistry.GetConnectionStatus(
+                    device!,
+                    DateTime.UtcNow
+                )
+        });
+    })
+    .WithTags("Live Devices")
+    .WithName("GetLiveDeviceByMac");
 
 
 app.Run();

@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using SmartX.Api.Data;
 using SmartX.Api.Models;
@@ -9,16 +8,20 @@ public sealed class TelemetryQueueWorker : BackgroundService
 {
     private readonly TelemetryQueue _queue;
 
+    private readonly DeviceRegistry _registry;
+
     private readonly IServiceScopeFactory _scopeFactory;
 
     private readonly ILogger<TelemetryQueueWorker> _logger;
 
     public TelemetryQueueWorker(
         TelemetryQueue queue,
+        DeviceRegistry registry,
         IServiceScopeFactory scopeFactory,
         ILogger<TelemetryQueueWorker> logger)
     {
         _queue = queue;
+        _registry = registry;
         _scopeFactory = scopeFactory;
         _logger = logger;
     }
@@ -27,7 +30,7 @@ public sealed class TelemetryQueueWorker : BackgroundService
         CancellationToken stoppingToken)
     {
         _logger.LogInformation(
-            "Smart-X FIFO telemetry worker started."
+            "Smart-X telemetry processing worker started."
         );
 
         while (!stoppingToken.IsCancellationRequested)
@@ -46,6 +49,8 @@ public sealed class TelemetryQueueWorker : BackgroundService
                 break;
             }
 
+            var priority = TelemetryPriorityClassifier.Classify(packet);
+
             try
             {
                 await using var scope =
@@ -54,35 +59,46 @@ public sealed class TelemetryQueueWorker : BackgroundService
                 var db = scope.ServiceProvider
                     .GetRequiredService<SmartXContext>();
 
-                // Confirm the sensor is registered.
-                var sensorExists = await db.Sensors
-                    .AsNoTracking()
-                    .AnyAsync(
-                        s => s.Id == packet.SensorId,
-                        stoppingToken
+                bool registeredInMemory =
+                    _registry.TryGetById(
+                        packet.SensorId,
+                        out _
                     );
 
-                if (!sensorExists)
+                if (!registeredInMemory)
                 {
-                    _logger.LogWarning(
-                        "Rejected queued packet {PacketId}: " +
-                        "Sensor {SensorId} does not exist.",
-                        packet.PacketId,
-                        packet.SensorId
-                    );
+                    // Cache miss: validate against
+                    // the persistent sensor registry.
+                    var sensor = await db.Sensors
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(
+                            s => s.Id == packet.SensorId,
+                            stoppingToken
+                        );
 
-                    _queue.MarkFailed();
-                    continue;
+                    if (sensor is null)
+                    {
+                        _logger.LogWarning(
+                            "Packet {PacketId} references " +
+                            "unregistered Sensor {SensorId}.",
+                            packet.PacketId,
+                            packet.SensorId
+                        );
+
+                        _queue.MarkFailed(packet);
+                        continue;
+                    }
+
+                    // Add device to live memory.
+                    _registry.UpsertSensor(sensor);
                 }
 
-                // Convert the queued packet into
-                // the existing database entity.
                 var record = new TelemetryRecord
                 {
                     SensorId = packet.SensorId,
 
-                    SoilMoisture = packet.SoilMoisture,
                     Temperature = packet.Temperature,
+                    SoilMoisture = packet.SoilMoisture,
 
                     Wattage = packet.Wattage,
                     ValveOpen = packet.ValveOpen,
@@ -96,35 +112,65 @@ public sealed class TelemetryQueueWorker : BackgroundService
                     stoppingToken
                 );
 
-                _queue.MarkProcessed();
+                bool updated =
+                    _registry.RecordTelemetry(packet);
 
-                _logger.LogDebug(
-                    "Processed packet {PacketId} " +
-                    "for Sensor {SensorId}.",
-                    packet.PacketId,
-                    packet.SensorId
-                );
+                if (!updated)
+                {
+                    _logger.LogWarning(
+                        "Saved packet {PacketId}, but Sensor " +
+                        "{SensorId} is no longer in memory.",
+                        packet.PacketId,
+                        packet.SensorId
+                    );
+                }
+
+                _queue.MarkProcessed(packet);
+
+                if (priority != TelemetryPriority.Normal)
+                {
+                    _logger.LogWarning(
+                        "Processed {Priority} telemetry " +
+                        "for Sensor {SensorId}. " +
+                        "Temperature={Temperature}, " +
+                        "Moisture={Moisture}, Wattage={Wattage}",
+                        priority,
+                        packet.SensorId,
+                        packet.Temperature,
+                        packet.SoilMoisture,
+                        packet.Wattage
+                    );
+                }
+                else
+                {
+                    _logger.LogDebug(
+                        "Processed normal telemetry " +
+                        "for Sensor {SensorId}.",
+                        packet.SensorId
+                    );
+                }
             }
             catch (OperationCanceledException)
                 when (stoppingToken.IsCancellationRequested)
             {
-                _queue.MarkFailed();
+                _queue.MarkFailed(packet);
                 break;
             }
             catch (Exception ex)
             {
-                _queue.MarkFailed();
+                _queue.MarkFailed(packet);
 
                 _logger.LogError(
                     ex,
-                    "Unable to process telemetry packet {PacketId}.",
+                    "Unable to process {Priority} packet {PacketId}.",
+                    priority,
                     packet.PacketId
                 );
             }
         }
 
         _logger.LogInformation(
-            "Smart-X FIFO telemetry worker stopped."
+            "Smart-X telemetry processing worker stopped."
         );
     }
 }

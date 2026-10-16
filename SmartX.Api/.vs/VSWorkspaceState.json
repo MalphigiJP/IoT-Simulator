@@ -1,13 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\Data",
-    "\\DTOs",
-    "\\Endpoints",
-    "\\Models",
-    "\\Services",
     "\\Validation"
   ],
-  "SelectedNode": "\\Program.cs",
+  "SelectedNode": "\\Validation",
   "PreviewInSolutionExplorer": false
 }

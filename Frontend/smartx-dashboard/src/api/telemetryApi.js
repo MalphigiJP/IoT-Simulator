@@ -24,7 +24,7 @@ export const getTelemetry = async () => {
 // GET TELEMETRY FOR A SPECIFIC SENSOR
 export const getSensorTelemetry = async (sensorId) => {
     const response = await api.get(
-        `/sensors/${sensorId}/telemetry`
+        `/sensors/${sensorId}/telemetry/timeline`
     );
 
     return response.data;

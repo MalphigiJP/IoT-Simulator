@@ -246,6 +246,7 @@ public static class SensorEndpoints
             int id,
             SmartXContext db,
             DeviceRegistry registry,
+            TelemetryHistoryStore history,
             CancellationToken cancellationToken) =>
         {
             var sensor = await db.Sensors.FindAsync(
@@ -264,12 +265,13 @@ public static class SensorEndpoints
             // Delete permanently from SQL Server.
             db.Sensors.Remove(sensor);
 
-            await db.SaveChangesAsync(
-                cancellationToken
-            );
+            await db.SaveChangesAsync(cancellationToken);
+
 
             // Remove from the live dictionary.
             registry.RemoveSensor(id);
+            registry.RemoveSensor(id);
+            history.RemoveSensor(id);
 
             return Results.NoContent();
         })

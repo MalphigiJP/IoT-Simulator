@@ -47,6 +47,7 @@ builder.Services.AddSingleton<DeviceRegistry>();
 builder.Services.AddHostedService<DeviceRegistryInitializer>();
 builder.Services.AddSingleton<TelemetryQueue>();
 builder.Services.AddHostedService<TelemetryQueueWorker>();
+builder.Services.AddSingleton<TelemetryHistoryStore>();
 
 
 var app = builder.Build();
@@ -296,10 +297,6 @@ app.MapGet("/api/telemetry/queue/status",
     .WithName("GetTelemetryQueueStatus");
 
 
-// ==========================================
-// PART 2 - LIVE DEVICE REGISTRY API
-// ==========================================
-
 // GET ALL LIVE DEVICE SNAPSHOTS
 app.MapGet("/api/devices/live",
     (DeviceRegistry registry) =>
@@ -367,6 +364,74 @@ app.MapGet("/api/devices/live/{macAddress}",
     })
     .WithTags("Live Devices")
     .WithName("GetLiveDeviceByMac");
+
+
+app.MapGet(
+    "/api/sensors/{sensorId:int}/telemetry/timeline",
+    async (
+        int sensorId,
+        SmartXContext db,
+        TelemetryHistoryStore history,
+        CancellationToken cancellationToken) =>
+    {
+        if (sensorId <= 0)
+        {
+            return Results.BadRequest(new
+            {
+                message = "A valid SensorId is required."
+            });
+        }
+
+        if (!history.IsHydrated(sensorId))
+        {
+            bool exists = await db.Sensors
+                .AsNoTracking()
+                .AnyAsync(
+                    sensor => sensor.Id == sensorId,
+                    cancellationToken
+                );
+
+            if (!exists)
+            {
+                return Results.NotFound(new
+                {
+                    message = "Sensor not found."
+                });
+            }
+
+            // SQL retrieves the 100 newest records.
+            var persistedHistory = await db.TelemetryRecords
+                .AsNoTracking()
+                .Where(t => t.SensorId == sensorId)
+                .OrderByDescending(t => t.Timestamp)
+                .ThenByDescending(t => t.Id)
+                .Take(TelemetryHistoryStore.MaxRecordsPerSensor)
+                .ToListAsync(cancellationToken);
+
+            // Merge with any new packets already
+            // processed by the background worker.
+            history.HydrateFromDatabase(
+                sensorId,
+                persistedHistory
+            );
+        }
+
+        var timeline = history.GetTimeline(sensorId);
+
+        return Results.Ok(timeline);
+    })
+    .WithTags("Telemetry History")
+    .WithName("GetSensorTelemetryTimeline");
+
+
+app.MapGet(
+    "/api/telemetry/timeline/status",
+    (TelemetryHistoryStore history) =>
+    {
+        return Results.Ok(history.GetStatus());
+    })
+    .WithTags("Telemetry History")
+    .WithName("GetTelemetryTimelineStatus");
 
 
 app.Run();

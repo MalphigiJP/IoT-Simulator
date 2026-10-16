@@ -1,8 +1,10 @@
 {
   "ExpandedNodes": [
     "",
+    "\\Endpoints",
+    "\\Services",
     "\\Validation"
   ],
-  "SelectedNode": "\\Validation",
+  "SelectedNode": "\\Endpoints\\SensorEndpoints.cs",
   "PreviewInSolutionExplorer": false
 }

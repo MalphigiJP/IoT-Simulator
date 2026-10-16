@@ -1,263 +1,326 @@
-﻿using System.Net.Http;
+﻿using SmartX.DeviceSimulator.Services;
 
-using SmartX.DeviceSimulator.Services;
+SimulationSettings settings;
 
-// Default to the API port configured earlier.
-// Can be overridden without modifying code.
-string apiUrl =
-    Environment.GetEnvironmentVariable("SMARTX_API_URL")
-    ?? "http://localhost:5000";
-
-// Validate the configured address.
-if (
-    !Uri.TryCreate(
-        apiUrl,
-        UriKind.Absolute,
-        out var parsedUri
-    ) ||
-    (
-        parsedUri.Scheme != Uri.UriSchemeHttp &&
-        parsedUri.Scheme != Uri.UriSchemeHttps
-    )
-)
+try
+{
+    settings = SimulationSettings.Load();
+}
+catch (Exception ex)
 {
     Console.Error.WriteLine(
-        "Invalid SMARTX_API_URL. " +
-        "Example: http://localhost:5000"
+        $"Invalid simulator configuration: {ex.Message}"
     );
 
     return 1;
 }
 
-// Ensure relative API paths resolve correctly.
-string normalizedAddress =
-    apiUrl.TrimEnd('/') + "/";
+using var cancellation = new CancellationTokenSource();
 
-using var http = new HttpClient
+ConsoleCancelEventHandler cancelHandler = (
+    sender,
+    eventArgs) =>
 {
-    BaseAddress = new Uri(normalizedAddress),
+    // Prevent an abrupt console termination.
+    eventArgs.Cancel = true;
 
-    Timeout = TimeSpan.FromSeconds(15)
+    Console.WriteLine();
+    Console.WriteLine(
+        "Shutdown requested. Stopping simulated devices..."
+    );
+
+    cancellation.Cancel();
 };
 
-var api = new SmartXApiClient(http);
-
-// Create our four independent device profiles.
-var devices = DeviceProfileCatalog
-    .CreateDefaults()
-    .Select(profile => new SimulatedDevice(profile))
-    .ToList();
-
-// Store the real SensorId assigned by SQL Server.
-var registeredDevices =
-    new List<(SimulatedDevice Device, int SensorId)>();
-
-const int readingsPerDevice = 6;
-
-int attempted = 0;
-int accepted = 0;
-int rejected = 0;
-
-Console.WriteLine();
-Console.WriteLine("==========================================");
-Console.WriteLine("       SMART-X DEVICE SIMULATOR");
-Console.WriteLine("==========================================");
-
-Console.WriteLine($"API: {normalizedAddress}");
-Console.WriteLine($"Devices: {devices.Count}");
-Console.WriteLine("Transmission: HTTP enabled");
-Console.WriteLine();
+Console.CancelKeyPress += cancelHandler;
 
 try
 {
 
+    using var http = new HttpClient
+    {
+        BaseAddress = new Uri(
+            settings.ApiUrl.TrimEnd('/') + "/"
+        ),
+
+        Timeout = TimeSpan.FromSeconds(15)
+    };
+
+    var api = new SmartXApiClient(http);
+
+    var devices = DeviceProfileCatalog
+        .CreateDefaults()
+        .Select(
+            profile => new SimulatedDevice(profile)
+        )
+        .ToList();
+
+    Console.WriteLine();
+    Console.WriteLine("=========================================");
+    Console.WriteLine("       SMART-X IOT DEVICE FLEET");
+    Console.WriteLine("=========================================");
+
+    Console.WriteLine(
+        $"API: {settings.ApiUrl}"
+    );
+
+    Console.WriteLine(
+        $"Configured devices: {devices.Count}"
+    );
+
+    Console.WriteLine(
+        settings.DurationSeconds == 0
+            ? "Duration: Continuous (Ctrl+C to stop)"
+            : $"Duration: {settings.DurationSeconds} seconds"
+    );
+
+    Console.WriteLine(
+        settings.MaxReadingsPerDevice == 0
+            ? "Readings per device: Unlimited"
+            : "Readings per device: " +
+              settings.MaxReadingsPerDevice
+    );
+
+    Console.WriteLine();
+
+    var registeredDevices =
+        new List<(SimulatedDevice Device, int SensorId)>();
+
     Console.WriteLine("STAGE 1: DEVICE REGISTRATION");
-    Console.WriteLine("------------------------------------------");
+    Console.WriteLine("-----------------------------------------");
+
 
     foreach (var device in devices)
     {
-        var profile = device.Profile;
-
-        var result = await api.EnsureRegisteredAsync(
-            profile
-        );
+        var registrationResult =
+            await api.EnsureRegisteredAsync(
+                device.Profile,
+                cancellation.Token
+            );
 
         registeredDevices.Add((
             Device: device,
-            SensorId: result.SensorId
+            SensorId: registrationResult.SensorId
         ));
 
-        string action = result.Created
+        string action = registrationResult.Created
             ? "REGISTERED"
             : "REUSED";
 
-        Console.WriteLine(
-            $"{action}: {profile.Name}"
+        var interval = settings.GetInterval(
+            device.Profile.Kind
         );
 
         Console.WriteLine(
-            $"  MAC: {profile.MacAddress}"
+            $"{action}: {device.Profile.Name}"
         );
 
         Console.WriteLine(
-            $"  Sensor ID: {result.SensorId}"
+            $"  Sensor ID: {registrationResult.SensorId}"
         );
 
-        Console.WriteLine();
+        Console.WriteLine(
+            $"  MAC: {device.Profile.MacAddress}"
+        );
+
+        Console.WriteLine(
+            $"  Reporting interval: " +
+            $"{interval.TotalMilliseconds:0} ms"
+        );
     }
 
-    Console.WriteLine("STAGE 2: TELEMETRY TRANSMISSION");
-    Console.WriteLine("------------------------------------------");
 
-    // Six transmission cycles.
-    // Every device produces one reading per cycle.
-    for (int cycle = 1;
-         cycle <= readingsPerDevice;
-         cycle++)
+    Console.WriteLine();
+
+    Console.WriteLine("STAGE 2: LIVE TELEMETRY");
+    Console.WriteLine("-----------------------------------------");
+
+    var statistics = new SimulationStatistics();
+
+    // Duration starts after registration.
+    if (settings.DurationSeconds > 0)
     {
-        Console.WriteLine();
-        Console.WriteLine(
-            $"--- TRANSMISSION CYCLE {cycle} ---"
+        cancellation.CancelAfter(
+            TimeSpan.FromSeconds(
+                settings.DurationSeconds
+            )
         );
-
-        foreach (var registered in registeredDevices)
-        {
-            // Generate telemetry using the device's
-            // existing Chunk 3.1 profile.
-            var reading = registered.Device
-                .GenerateReading() with
-            {
-                // Use the database-assigned ID.
-                SensorId = registered.SensorId
-            };
-
-            attempted++;
-
-            // Send through actual HTTP POST.
-            var result = await api.SendTelemetryAsync(
-                reading
-            );
-
-            if (result.Accepted)
-            {
-                accepted++;
-
-                Console.ForegroundColor =
-                    ConsoleColor.Green;
-
-                Console.WriteLine(
-                    $"[ACCEPTED] " +
-                    $"{registered.Device.Profile.Name}"
-                );
-
-                Console.ResetColor();
-
-                Console.WriteLine(
-                    $"  Sensor: {registered.SensorId}"
-                );
-
-                Console.WriteLine(
-                    $"  Packet: {result.PacketId}"
-                );
-
-                Console.WriteLine(
-                    $"  Attempts: {result.Attempts}"
-                );
-            }
-            else
-            {
-                rejected++;
-
-                Console.ForegroundColor =
-                    ConsoleColor.Yellow;
-
-                Console.WriteLine(
-                    $"[NOT ACCEPTED] " +
-                    $"{registered.Device.Profile.Name}"
-                );
-
-                Console.ResetColor();
-
-                Console.WriteLine(
-                    $"  Reason: {result.Message}"
-                );
-            }
-        }
-
-        // Short pause between transmission cycles.
-        // Continuous simulation comes in Chunk 3.3.
-        await Task.Delay(200);
     }
 
+    // Start one independent asynchronous
+    // simulation loop for each registered device.
+    var runners = registeredDevices
+        .Select(registered =>
+        {
+            return new DeviceSimulationRunner(
+                registered.Device,
+                registered.SensorId,
+                api,
+                statistics,
+
+                settings.GetInterval(
+                    registered.Device.Profile.Kind
+                ),
+
+                settings.MaxReadingsPerDevice
+            );
+        })
+        .ToList();
+
+    // Periodically print fleet-wide statistics.
+    var reportingTask = ReportStatisticsAsync(
+        statistics,
+        cancellation.Token
+    );
+
+    // Start every device loop.
+    var deviceTasks = runners
+        .Select(
+            runner => runner.RunAsync(
+                cancellation.Token
+            )
+        )
+        .ToArray();
+
+    // Await every device concurrently.
+    await Task.WhenAll(deviceTasks);
+
+    // Devices may finish naturally when a
+    // maximum reading count is configured.
+    cancellation.Cancel();
+
+    await reportingTask;
+
+    var finalStats = statistics.GetSnapshot();
+
     Console.WriteLine();
-    Console.WriteLine("==========================================");
-    Console.WriteLine("       TRANSMISSION SUMMARY");
-    Console.WriteLine("==========================================");
+    Console.WriteLine("=========================================");
+    Console.WriteLine("          SIMULATION SUMMARY");
+    Console.WriteLine("=========================================");
 
     Console.WriteLine(
-        $"Devices registered/reused: {registeredDevices.Count}"
+        $"Devices: {registeredDevices.Count}"
     );
 
     Console.WriteLine(
-        $"Readings attempted: {attempted}"
+        $"Readings attempted: {finalStats.Attempted}"
     );
 
     Console.WriteLine(
-        $"Accepted into API queue: {accepted}"
+        $"Accepted by API: {finalStats.Accepted}"
     );
 
     Console.WriteLine(
-        $"Not accepted: {rejected}"
+        $"Queue-full responses: {finalStats.QueueFull}"
     );
 
     Console.WriteLine(
-        "Transport: HTTP"
+        $"Other HTTP rejections: {finalStats.Rejected}"
     );
 
     Console.WriteLine(
-        "Persistence: Async background worker"
+        $"Transmission errors: {finalStats.Errors}"
     );
 
     Console.WriteLine();
     Console.WriteLine(
-        "Use Smart-X queue, live device and " +
-        "telemetry endpoints to verify processing."
+        "HTTP 202 confirms queue acceptance, not database persistence."
     );
 
-    return rejected == 0 ? 0 : 1;
+    Console.WriteLine(
+        "Check /api/telemetry/queue/status for processing results."
+    );
+
+    Console.WriteLine();
+
+    return (
+        finalStats.QueueFull == 0 &&
+        finalStats.Rejected == 0 &&
+        finalStats.Errors == 0
+    ) ? 0 : 1;
+}
+catch (OperationCanceledException)
+    when (cancellation.IsCancellationRequested)
+{
+    Console.WriteLine(
+        "Simulation stopped during startup."
+    );
+
+    return 0;
 }
 catch (HttpRequestException ex)
 {
-    Console.Error.WriteLine();
     Console.Error.WriteLine(
-        "HTTP communication with Smart-X failed."
-    );
-
-    Console.Error.WriteLine(ex.Message);
-
-    Console.Error.WriteLine(
-        "Check that the API is running and " +
-        "SMARTX_API_URL matches its address."
-    );
-
-    return 1;
-}
-catch (TaskCanceledException)
-{
-    Console.Error.WriteLine();
-    Console.Error.WriteLine(
-        "The request timed out or was cancelled. " +
-        "Check API availability and database health."
+        $"Unable to communicate with Smart-X: {ex.Message}"
     );
 
     return 1;
 }
 catch (Exception ex)
 {
-    Console.Error.WriteLine();
     Console.Error.WriteLine(
-        $"Simulation failed: {ex.Message}"
+        $"Simulator error: {ex.Message}"
     );
 
     return 1;
+}
+finally
+{
+    cancellation.Cancel();
+
+    Console.CancelKeyPress -= cancelHandler;
+}
+
+static async Task ReportStatisticsAsync(
+    SimulationStatistics statistics,
+    CancellationToken cancellationToken)
+{
+    using var timer = new PeriodicTimer(
+        TimeSpan.FromSeconds(10)
+    );
+
+    try
+    {
+        while (
+            await timer.WaitForNextTickAsync(
+                cancellationToken
+            )
+        )
+        {
+            var snapshot = statistics.GetSnapshot();
+
+            Console.WriteLine();
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine("LIVE FLEET STATISTICS");
+            Console.WriteLine("-----------------------------------------");
+
+            Console.WriteLine(
+                $"Attempted: {snapshot.Attempted}"
+            );
+
+            Console.WriteLine(
+                $"Accepted: {snapshot.Accepted}"
+            );
+
+            Console.WriteLine(
+                $"Queue full: {snapshot.QueueFull}"
+            );
+
+            Console.WriteLine(
+                $"Rejected: {snapshot.Rejected}"
+            );
+
+            Console.WriteLine(
+                $"Errors: {snapshot.Errors}"
+            );
+
+            Console.WriteLine("-----------------------------------------");
+            Console.WriteLine();
+        }
+    }
+    catch (OperationCanceledException)
+        when (cancellationToken.IsCancellationRequested)
+    {
+        // Expected when the simulation stops.
+    }
 }

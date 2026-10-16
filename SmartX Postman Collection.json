@@ -1,0 +1,1021 @@
+{
+  "info": {
+    "name": "Smart-X — Phase 2 Functional API Tests (localhost:5001)",
+    "_postman_id": "216b1bea-aec2-46d5-aee6-f595901ebca6",
+    "description": "Run folder 01 in Postman Collection Runner with a 250–500 ms request delay and no parallel simulator traffic. It creates a disposable sensor and covers Queue<T>, PriorityQueue<TElement,TPriority>, Dictionary, SortedDictionary and HashSet alerts via HTTP. For offline detection, wait >130 seconds and run folder 02 manually. Run folder 03 last to delete the test sensor. Unit tests (dotnet test) prove actual priority dequeue order, FIFO and cache boundaries deterministically.\n\nAll 32 request URLs explicitly use http://localhost:5001 (no baseUrl variable). Start ASP.NET Core with that HTTP address enabled, e.g. applicationUrl: http://localhost:5000;http://localhost:5001. The collection still uses sensorId, testMac, sameTimestamp, and queueBaseline for test data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 — Automated Phase 2 Checks (run this folder)",
+      "item": [
+        {
+          "id": "206493c0-3c3d-476d-85d3-f92bf41d3a41",
+          "name": "01 API health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "41ebaee4-2108-401a-aff1-c52fe9e0a10a",
+          "name": "02 Create disposable test sensor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/sensors",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"macAddress\": \"{{testMac}}\",\n  \"location\": \"Phase 2 QA - Initial\",\n  \"category\": \"Environmental\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Creates a new uniquely addressed sensor; never tests against your existing registered sensors."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Array.from({length:3}, () => Math.floor(Math.random()*256).toString(16).padStart(2,\"0\").toUpperCase()).join(\":\");",
+                  "pm.collectionVariables.set(\"testMac\", \"02:DA:7A:\" + suffix);",
+                  "pm.collectionVariables.unset(\"sensorId\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201 Created\", () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  const s = pm.response.json();",
+                  "  pm.collectionVariables.set(\"sensorId\", String(s.id));",
+                  "  pm.test(\"Stored new sensor ID and MAC\", () => {",
+                  "    pm.expect(s.id).to.be.a(\"number\");",
+                  "    pm.expect(s.macAddress.toUpperCase()).to.eql(pm.collectionVariables.get(\"testMac\"));",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "75c25ee9-e889-48e5-9c99-add155c84dbc",
+          "name": "03 Live registry contains new sensor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/devices/live"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const devices = pm.response.json();",
+                  "const id = Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "pm.test(\"New sensor exists in live MAC dictionary\", () => {",
+                  "  pm.expect(devices.some(d => d.sensorId === id && d.macAddress === pm.collectionVariables.get(\"testMac\"))).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "30780b08-1432-43d3-b268-7124a5941b0b",
+          "name": "04 Update sensor metadata",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/sensors/{{sensorId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"macAddress\": \"{{testMac}}\",\n  \"location\": \"Phase 2 QA - Updated\",\n  \"category\": \"Environmental\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"SQL registration updated\", () => pm.expect(pm.response.json().location).to.eql(\"Phase 2 QA - Updated\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "599bb19a-423e-4a04-8180-1bf438622a48",
+          "name": "05 MAC-based registry lookup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/devices/live/{{testMac}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Dictionary reflects updated sensor\", () => {",
+                  "  pm.expect(body.device.sensorId).to.eql(Number(pm.collectionVariables.get(\"sensorId\")));",
+                  "  pm.expect(body.device.location).to.eql(\"Phase 2 QA - Updated\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "fe0a342f-874c-445b-8f01-4a096f0d5ff4",
+          "name": "06 Capture queue baseline",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/queue/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const s=pm.response.json();",
+                  "pm.collectionVariables.set(\"queueBaseline\",JSON.stringify(s));",
+                  "pm.test(\"Both queue data structures available\",()=>{",
+                  "  pm.expect(s).to.have.property(\"normalWaiting\");",
+                  "  pm.expect(s).to.have.property(\"emergencyWaiting\");",
+                  "  pm.expect(s.capacity).to.eql(5000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f99990b5-035e-492a-9031-60219a964147",
+          "name": "07 Normal telemetry -> FIFO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 25,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500,\n  \"valveOpen\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202 Accepted\",()=>pm.response.to.have.status(202));",
+                  "const s=pm.response.json();",
+                  "pm.test(\"Packet enqueued, not falsely reported persisted\",()=>{",
+                  "  pm.expect(s.status).to.eql(\"Queued\");",
+                  "  pm.expect(s.packetId).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9e6cb5e5-c252-4868-b35c-36cfdcc08d33",
+          "name": "08 Critical telemetry -> priority",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 58,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500,\n  \"valveOpen\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202 Accepted\",()=>pm.response.to.have.status(202));",
+                  "const s=pm.response.json();",
+                  "pm.test(\"Packet enqueued, not falsely reported persisted\",()=>{",
+                  "  pm.expect(s.status).to.eql(\"Queued\");",
+                  "  pm.expect(s.packetId).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "87d5db36-b24f-45d9-b813-ddeed26e2374",
+          "name": "09 Emergency telemetry -> priority",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 82,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500,\n  \"valveOpen\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202 Accepted\",()=>pm.response.to.have.status(202));",
+                  "const s=pm.response.json();",
+                  "pm.test(\"Packet enqueued, not falsely reported persisted\",()=>{",
+                  "  pm.expect(s.status).to.eql(\"Queued\");",
+                  "  pm.expect(s.packetId).to.be.a(\"string\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ca9df446-e362-4a97-962a-6900ae69e94b",
+          "name": "10 Batch: two equal timestamps",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry/batch",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"sensorId\": {{sensorId}},\n    \"temperature\": 24,\n    \"timestamp\": \"{{sameTimestamp}}\"\n  },\n  {\n    \"sensorId\": {{sensorId}},\n    \"temperature\": 26,\n    \"timestamp\": \"{{sameTimestamp}}\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"sameTimestamp\", new Date().toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202 Accepted\",()=>pm.response.to.have.status(202));",
+                  "pm.test(\"Two records queued atomically\",()=>pm.expect(pm.response.json().acceptedRecords).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "13fdc38c-8d06-459a-8d74-19ab158ff966",
+          "name": "11 Poll until initial five packets saved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/queue/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = pm.response.json();",
+                  "const b = JSON.parse(pm.collectionVariables.get(\"queueBaseline\") || \"{}\");",
+                  "const expected = 5;",
+                  "const ready = s.processed - b.processed >= expected;",
+                  "const tries = Number(pm.collectionVariables.get(\"pollTries\") || 0);",
+                  "if (!ready && tries < 40) {",
+                  "  pm.collectionVariables.set(\"pollTries\", tries + 1);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(\"pollTries\");",
+                  "  pm.test(\"At least \" + expected + \" queued packets persisted\", () => pm.expect(ready).to.eql(true));",
+                  "  pm.test(\"No queue processing failures\", () => pm.expect(s.failed).to.eql(b.failed));",
+                  "  pm.test(\"Queue not processing our batch\", () => pm.expect(s.waiting + s.processing).to.be.at.least(0));",
+                  "}",
+                  "if (ready) {",
+                  "  pm.test(\"FIFO and priority classifications counted\",()=>{",
+                  "    pm.expect(s.normalAccepted-b.normalAccepted).to.be.at.least(3);",
+                  "    pm.expect(s.criticalAccepted-b.criticalAccepted).to.be.at.least(1);",
+                  "    pm.expect(s.emergencyAccepted-b.emergencyAccepted).to.be.at.least(1);",
+                  "    pm.expect(s.normalProcessed-b.normalProcessed).to.be.at.least(3);",
+                  "    pm.expect(s.criticalProcessed-b.criticalProcessed).to.be.at.least(1);",
+                  "    pm.expect(s.emergencyProcessed-b.emergencyProcessed).to.be.at.least(1);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "afb246c2-7891-4ba8-9adb-9c5c83219c97",
+          "name": "12 Timeline order and duplicate timestamps",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/sensors/{{sensorId}}/telemetry/timeline"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const rows = pm.response.json();",
+                  "const stamps=rows.map(r=>Date.parse(r.timestamp + (/[zZ]|[+-]\\d\\d:\\d\\d$/.test(r.timestamp)?\"\":\"Z\")));",
+                  "pm.test(\"At least five telemetry records present\",()=>pm.expect(rows.length).to.be.at.least(5));",
+                  "pm.test(\"Chronological order\",()=>{",
+                  "  for(let i=1;i<stamps.length;i++) pm.expect(stamps[i]).to.be.at.least(stamps[i-1]);",
+                  "});",
+                  "const same=pm.collectionVariables.get(\"sameTimestamp\").slice(0,19);",
+                  "pm.test(\"Both identical-timestamp readings preserved\",()=>{",
+                  "  pm.expect(rows.filter(r=>r.timestamp.slice(0,19)===same).length).to.be.at.least(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "4be12f9d-77a7-45e1-9eb9-b2624e227917",
+          "name": "13 History cache statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/timeline/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const s=pm.response.json();",
+                  "pm.test(\"SortedDictionary timeline hydrated\",()=>{",
+                  "  pm.expect(s.sensorTimelines).to.be.at.least(1);",
+                  "  pm.expect(s.hydratedTimelines).to.be.at.least(1);",
+                  "  pm.expect(s.maxRecordsPerSensor).to.eql(100);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "35107187-df88-43a8-a5cf-ef28ac145944",
+          "name": "14 Create three simultaneous emergency faults",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 82,\n  \"soilMoisture\": 2,\n  \"wattage\": 9500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "db7823fa-357e-43fc-af06-c6e97645ae7f",
+          "name": "15 Poll until fault packet persisted",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/queue/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = pm.response.json();",
+                  "const b = JSON.parse(pm.collectionVariables.get(\"queueBaseline\") || \"{}\");",
+                  "const expected = 6;",
+                  "const ready = s.processed - b.processed >= expected;",
+                  "const tries = Number(pm.collectionVariables.get(\"pollTries\") || 0);",
+                  "if (!ready && tries < 40) {",
+                  "  pm.collectionVariables.set(\"pollTries\", tries + 1);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(\"pollTries\");",
+                  "  pm.test(\"At least \" + expected + \" queued packets persisted\", () => pm.expect(ready).to.eql(true));",
+                  "  pm.test(\"No queue processing failures\", () => pm.expect(s.failed).to.eql(b.failed));",
+                  "  pm.test(\"Queue not processing our batch\", () => pm.expect(s.waiting + s.processing).to.be.at.least(0));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "fb46968e-05ca-47b0-bf91-07fd18feb30a",
+          "name": "16 Active alerts: three unique faults",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/active"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "const mine=pm.response.json().filter(a=>a.sensorId===id);",
+                  "pm.test(\"Exactly three fault types, all emergency\",()=>{",
+                  "  pm.expect(mine.length).to.eql(3);",
+                  "  pm.expect(new Set(mine.map(a=>a.type)).size).to.eql(3);",
+                  "  mine.forEach(a=>pm.expect(a.severity).to.eql(\"Emergency\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2a50c742-54cb-4c3e-9e8e-8b4658c3ddf6",
+          "name": "17 Repeat all three faults (no new alert keys)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 84,\n  \"soilMoisture\": 2,\n  \"wattage\": 9600\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "529e5fcc-f6b8-4030-8fb9-9a4a453942ee",
+          "name": "18 Poll until duplicate fault packet saved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/queue/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = pm.response.json();",
+                  "const b = JSON.parse(pm.collectionVariables.get(\"queueBaseline\") || \"{}\");",
+                  "const expected = 7;",
+                  "const ready = s.processed - b.processed >= expected;",
+                  "const tries = Number(pm.collectionVariables.get(\"pollTries\") || 0);",
+                  "if (!ready && tries < 40) {",
+                  "  pm.collectionVariables.set(\"pollTries\", tries + 1);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(\"pollTries\");",
+                  "  pm.test(\"At least \" + expected + \" queued packets persisted\", () => pm.expect(ready).to.eql(true));",
+                  "  pm.test(\"No queue processing failures\", () => pm.expect(s.failed).to.eql(b.failed));",
+                  "  pm.test(\"Queue not processing our batch\", () => pm.expect(s.waiting + s.processing).to.be.at.least(0));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "0221967a-3ff7-41fc-8f8f-3a30d55e1b8b",
+          "name": "19 Repeated faults stay unique",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/active"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "const mine=pm.response.json().filter(a=>a.sensorId===id);",
+                  "pm.test(\"Same three alert keys and updated observations\",()=>{",
+                  "  pm.expect(mine.length).to.eql(3);",
+                  "  pm.expect(new Set(mine.map(a=>a.type)).size).to.eql(3);",
+                  "  mine.forEach(a=>pm.expect(a.observations).to.be.at.least(2));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "27df0310-9e68-480b-bfc1-4655012a4706",
+          "name": "20 Normal telemetry resolves faults",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 25,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "89f598f4-03dc-4859-9b35-dc2746075f1d",
+          "name": "21 Poll until recovery packet saved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/queue/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = pm.response.json();",
+                  "const b = JSON.parse(pm.collectionVariables.get(\"queueBaseline\") || \"{}\");",
+                  "const expected = 8;",
+                  "const ready = s.processed - b.processed >= expected;",
+                  "const tries = Number(pm.collectionVariables.get(\"pollTries\") || 0);",
+                  "if (!ready && tries < 40) {",
+                  "  pm.collectionVariables.set(\"pollTries\", tries + 1);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(\"pollTries\");",
+                  "  pm.test(\"At least \" + expected + \" queued packets persisted\", () => pm.expect(ready).to.eql(true));",
+                  "  pm.test(\"No queue processing failures\", () => pm.expect(s.failed).to.eql(b.failed));",
+                  "  pm.test(\"Queue not processing our batch\", () => pm.expect(s.waiting + s.processing).to.be.at.least(0));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e7d4294b-2dd7-4a20-a842-36acd2b8c73c",
+          "name": "22 Confirm faults resolved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/active"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "pm.test(\"No active faults on test sensor\",()=>{",
+                  "  pm.expect(pm.response.json().filter(a=>a.sensorId===id)).to.have.length(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "c22883c6-d80a-4666-a4b0-78d01f41b5ba",
+          "name": "23 Alert and live-state statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const s=pm.response.json();",
+                  "pm.test(\"Alert lifecycle counters exist\",()=>{",
+                  "  pm.expect(s.activations).to.be.at.least(3);",
+                  "  pm.expect(s.resolutions).to.be.at.least(3);",
+                  "  pm.expect(s.repeatedObservations).to.be.at.least(3);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "d3e87c3e-a04b-4db6-83a1-dc0797d2a9f6",
+          "name": "24 Live registry holds latest normal state",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/devices/live/{{testMac}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const d=pm.response.json().device;",
+                  "pm.test(\"Latest device state and packet count updated\",()=>{",
+                  "  pm.expect(d.temperature).to.eql(25);",
+                  "  pm.expect(d.soilMoisture).to.eql(65);",
+                  "  pm.expect(d.wattage).to.eql(1500);",
+                  "  pm.expect(d.packetsProcessed).to.be.at.least(8);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Creates disposable test sensor; posts telemetry; polls async worker; asserts FIFO/priority counters, live dictionary, sorted history, unique faults, repeated observations and recovery. Run as a folder in Postman Runner."
+    },
+    {
+      "name": "02 — Offline Detection (manual after 130+ seconds)",
+      "item": [
+        {
+          "id": "c4428531-4ae8-416d-b7cd-6baacffb4052",
+          "name": "01 Check disconnected sensor after 130-140 seconds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/disconnected",
+            "description": "Wait 130–140 seconds after completing the automated folder, without sending telemetry, before running this. DeviceConnectivityMonitor checks every 10 seconds."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "pm.test(\"Unique disconnected ID appears\",()=>pm.expect(pm.response.json()).to.include(id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "d8757a2c-71d2-4ffe-9818-a3d137fc0c66",
+          "name": "02 Confirm one disconnected alert",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/active"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "const mine=pm.response.json().filter(a=>a.sensorId===id && a.type===\"Disconnected\");",
+                  "pm.test(\"Exactly one disconnected alert\",()=>pm.expect(mine.length).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "663e28ac-5578-468b-b457-4f334caac294",
+          "name": "03 Reconnect device with healthy packet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "http://localhost:5001/api/telemetry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 25,\n  \"soilMoisture\": 65\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 202\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2844fb51-8dee-4cf9-bd35-d79de3fa8761",
+          "name": "04 Poll until reconnection persisted",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/telemetry/queue/status"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = pm.response.json();",
+                  "const b = JSON.parse(pm.collectionVariables.get(\"queueBaseline\") || \"{}\");",
+                  "const expected = 9;",
+                  "const ready = s.processed - b.processed >= expected;",
+                  "const tries = Number(pm.collectionVariables.get(\"pollTries\") || 0);",
+                  "if (!ready && tries < 40) {",
+                  "  pm.collectionVariables.set(\"pollTries\", tries + 1);",
+                  "  pm.execution.setNextRequest(pm.info.requestId);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(\"pollTries\");",
+                  "  pm.test(\"At least \" + expected + \" queued packets persisted\", () => pm.expect(ready).to.eql(true));",
+                  "  pm.test(\"No queue processing failures\", () => pm.expect(s.failed).to.eql(b.failed));",
+                  "  pm.test(\"Queue not processing our batch\", () => pm.expect(s.waiting + s.processing).to.be.at.least(0));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ffaab60f-884a-4c9e-a9c2-a0d28726539e",
+          "name": "05 Confirm disconnected alert resolved",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/disconnected"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "pm.test(\"Sensor no longer disconnected\",()=>pm.expect(pm.response.json()).not.to.include(id));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Do not run immediately after folder 01. Wait at least 130–140 seconds without new telemetry, then run this folder with the same collection variables. The worker monitor checks every 10 seconds."
+    },
+    {
+      "name": "03 — Cleanup (run last)",
+      "item": [
+        {
+          "id": "1173f108-d4dc-4923-84b4-fa695bf79491",
+          "name": "01 DELETE disposable test sensor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "http://localhost:5001/api/sensors/{{sensorId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2c44f6b2-e8ed-4b06-aa96-427bf3887488",
+          "name": "02 Live MAC lookup returns 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/devices/live/{{testMac}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8c74f92c-aec3-4749-8e59-8559f089e985",
+          "name": "03 Deleted sensor alerts cleared",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:5001/api/alerts/active"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+                  "const id=Number(pm.collectionVariables.get(\"sensorId\"));",
+                  "pm.test(\"No lingering alerts for deleted sensor\",()=>pm.expect(pm.response.json().filter(a=>a.sensorId===id)).to.have.length(0));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Deletes only the disposable sensor created by this collection, then checks live registry and alert cleanup."
+    }
+  ],
+  "variable": [
+    {
+      "key": "sensorId",
+      "value": ""
+    },
+    {
+      "key": "testMac",
+      "value": ""
+    },
+    {
+      "key": "sameTimestamp",
+      "value": ""
+    },
+    {
+      "key": "queueBaseline",
+      "value": ""
+    }
+  ]
+}

@@ -2,8 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\Endpoints",
+    "\\Properties",
     "\\Services",
     "\\Validation"
   ],
+  "SelectedNode": "\\Properties\\launchSettings.json",
   "PreviewInSolutionExplorer": false
 }

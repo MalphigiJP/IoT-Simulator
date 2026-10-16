@@ -181,7 +181,21 @@ React, React Router, React Context API, JavaScript (JSX), and CSS.
 
 **Outcome:** Smart-X now supports seamless client-side navigation while retaining important user interface settings. This establishes the foundation for real-time command processing, device control, and predictive monitoring in subsequent phases.
 
+# Part 2 — Phase 2: Real-Time Processing Engine
+Phase 2 transforms Smart-X from a basic IoT telemetry gateway into a real-time processing system using advanced C# data structures.
 
+### Implemented Features
+- FIFO Telemetry Queue (Queue<T>): Processes incoming sensor readings in arrival order using a background worker.
+- Priority Processing (PriorityQueue<TElement, TPriority>): Prioritises emergency and critical telemetry based on temperature, soil moisture and power thresholds.
+- Live Device Registry (Dictionary<TKey, TValue>): Provides fast, MAC-address-based device lookups and maintains 
+- Chronological History (SortedDictionary<TKey, TValue>): Organises telemetry by timestamp, supports duplicate timestamps and maintains a bounded in-memory history.
+- Active Alerts (HashSet<T>): Tracks unique sensor faults and disconnected devices, preventing duplicate alerts and automatically resolving recovered conditions.
+
+### Backend Architecture
+Incoming HTTP telemetry is queued and processed asynchronously by ASP.NET Core background services. Successfully processed readings are persisted using Entity Framework Core and SQL Server, while in-memory data structures support real-time monitoring.
+
+### Testing and Validation
+Phase 2 includes 35 xUnit test cases covering queue behaviour, prioritisation, device lookups, chronological ordering, duplicate prevention and alert resolution. A Postman collection provides additional API-level functional tests.
 
 ## Reference List
 

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+
 using SmartX.Api.Data;
 using SmartX.Api.Models;
 
@@ -7,21 +8,29 @@ namespace SmartX.Api.Services;
 public sealed class TelemetryQueueWorker : BackgroundService
 {
     private readonly TelemetryQueue _queue;
+
     private readonly DeviceRegistry _registry;
+
     private readonly TelemetryHistoryStore _history;
+
+    private readonly ActiveAlertService _alerts;
+
     private readonly IServiceScopeFactory _scopeFactory;
+
     private readonly ILogger<TelemetryQueueWorker> _logger;
 
     public TelemetryQueueWorker(
         TelemetryQueue queue,
         DeviceRegistry registry,
         TelemetryHistoryStore history,
+        ActiveAlertService alerts,
         IServiceScopeFactory scopeFactory,
         ILogger<TelemetryQueueWorker> logger)
     {
         _queue = queue;
         _registry = registry;
         _history = history;
+        _alerts = alerts;
         _scopeFactory = scopeFactory;
         _logger = logger;
     }
@@ -30,7 +39,7 @@ public sealed class TelemetryQueueWorker : BackgroundService
         CancellationToken stoppingToken)
     {
         _logger.LogInformation(
-            "Smart-X telemetry history worker started."
+            "Smart-X telemetry processing worker started."
         );
 
         while (!stoppingToken.IsCancellationRequested)
@@ -76,10 +85,13 @@ public sealed class TelemetryQueueWorker : BackgroundService
                     if (sensor is null)
                     {
                         _queue.MarkFailed(packet);
+
                         processingCompleted = true;
 
                         _logger.LogWarning(
-                            "Unknown sensor {SensorId}.",
+                            "Telemetry packet {PacketId} " +
+                            "references unknown Sensor {SensorId}.",
+                            packet.PacketId,
                             packet.SensorId
                         );
 
@@ -92,10 +104,13 @@ public sealed class TelemetryQueueWorker : BackgroundService
                 var record = new TelemetryRecord
                 {
                     SensorId = packet.SensorId,
+
                     Temperature = packet.Temperature,
                     SoilMoisture = packet.SoilMoisture,
+
                     Wattage = packet.Wattage,
                     ValveOpen = packet.ValveOpen,
+
                     Timestamp = packet.Timestamp
                 };
 
@@ -104,31 +119,60 @@ public sealed class TelemetryQueueWorker : BackgroundService
                 await db.SaveChangesAsync(stoppingToken);
 
                 _queue.MarkProcessed(packet);
+
                 processingCompleted = true;
 
                 try
                 {
                     _history.AddProcessed(record);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Saved record {RecordId}, " +
+                        "but history cache update failed.",
+                        record.Id
+                    );
+                }
 
-                    bool registryUpdated =
+                try
+                {
+                    bool updated =
                         _registry.RecordTelemetry(packet);
 
-                    if (!registryUpdated)
+                    if (
+                        updated &&
+                        _registry.TryGetById(
+                            packet.SensorId,
+                            out var device
+                        ) &&
+                        device is not null
+                    )
+                    {
+                        // Only current telemetry affects
+                        // active fault state.
+                        _alerts.ProcessTelemetry(
+                            packet,
+                            device
+                        );
+                    }
+                    else
                     {
                         _logger.LogWarning(
-                            "Sensor {SensorId} is missing " +
-                            "from the live device registry.",
+                            "Sensor {SensorId} could not be " +
+                            "updated in the live registry.",
                             packet.SensorId
                         );
                     }
                 }
-                catch (Exception cacheException)
+                catch (Exception ex)
                 {
                     _logger.LogError(
-                        cacheException,
-                        "Saved record {RecordId}, but " +
-                        "a live cache update failed.",
-                        record.Id
+                        ex,
+                        "Saved packet {PacketId}, but " +
+                        "live registry or alert update failed.",
+                        packet.PacketId
                     );
                 }
 
@@ -168,7 +212,7 @@ public sealed class TelemetryQueueWorker : BackgroundService
         }
 
         _logger.LogInformation(
-            "Smart-X telemetry history worker stopped."
+            "Smart-X telemetry processing worker stopped."
         );
     }
 }

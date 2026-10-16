@@ -242,11 +242,13 @@ public static class SensorEndpoints
         })
         .WithName("UpdateSensor");
 
+
         group.MapDelete("/{id:int}", async (
             int id,
             SmartXContext db,
             DeviceRegistry registry,
             TelemetryHistoryStore history,
+            ActiveAlertService alerts,
             CancellationToken cancellationToken) =>
         {
             var sensor = await db.Sensors.FindAsync(
@@ -262,20 +264,19 @@ public static class SensorEndpoints
                 });
             }
 
-            // Delete permanently from SQL Server.
             db.Sensors.Remove(sensor);
 
             await db.SaveChangesAsync(cancellationToken);
 
-
-            // Remove from the live dictionary.
-            registry.RemoveSensor(id);
+            // Remove from all live in-memory structures.
             registry.RemoveSensor(id);
             history.RemoveSensor(id);
+            alerts.RemoveSensor(id);
 
             return Results.NoContent();
         })
         .WithName("DeleteSensor");
+
 
         return app;
     }

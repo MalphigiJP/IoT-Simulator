@@ -41,13 +41,16 @@ builder.Services.AddDbContext<SmartXContext>(options =>
     );
 });
 
+
 builder.Services.AddScoped<SensorService>();
 builder.Services.AddScoped<TelemetrySeeder>();
 builder.Services.AddSingleton<DeviceRegistry>();
 builder.Services.AddHostedService<DeviceRegistryInitializer>();
+builder.Services.AddSingleton<TelemetryHistoryStore>();
+builder.Services.AddSingleton<ActiveAlertService>();
+builder.Services.AddHostedService<DeviceConnectivityMonitor>();
 builder.Services.AddSingleton<TelemetryQueue>();
 builder.Services.AddHostedService<TelemetryQueueWorker>();
-builder.Services.AddSingleton<TelemetryHistoryStore>();
 
 
 var app = builder.Build();
@@ -432,6 +435,60 @@ app.MapGet(
     })
     .WithTags("Telemetry History")
     .WithName("GetTelemetryTimelineStatus");
+
+// GET CURRENT ACTIVE ALERTS
+app.MapGet("/api/alerts/active",
+    (ActiveAlertService alerts) =>
+    {
+        var result = alerts.GetActiveAlerts()
+            .Select(alert => new
+            {
+                alertId =
+                    $"{alert.SensorId}:{alert.Kind}",
+
+                alert.SensorId,
+                alert.MacAddress,
+                alert.Location,
+                alert.Category,
+
+                type = alert.Kind.ToString(),
+
+                alert.Severity,
+                alert.Message,
+                alert.CurrentValue,
+
+                alert.ActivatedAtUtc,
+                alert.LastObservedAtUtc,
+                alert.Observations
+            })
+            .ToList();
+
+        return Results.Ok(result);
+    })
+    .WithTags("Active Alerts")
+    .WithName("GetActiveAlerts");
+
+
+// GET ACTIVE ALERT STATISTICS
+app.MapGet("/api/alerts/status",
+    (ActiveAlertService alerts) =>
+    {
+        return Results.Ok(alerts.GetStatus());
+    })
+    .WithTags("Active Alerts")
+    .WithName("GetActiveAlertStatus");
+
+
+// GET UNIQUE DISCONNECTED SENSOR IDS
+app.MapGet("/api/alerts/disconnected",
+    (ActiveAlertService alerts) =>
+    {
+        return Results.Ok(
+            alerts.GetDisconnectedSensorIds()
+        );
+    })
+    .WithTags("Active Alerts")
+    .WithName("GetDisconnectedSensorIds");
 
 
 app.Run();

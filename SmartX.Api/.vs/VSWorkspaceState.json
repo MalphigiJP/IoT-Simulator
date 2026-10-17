@@ -4,11 +4,12 @@
     "\\Data",
     "\\DTOs",
     "\\Endpoints",
+    "\\Migrations",
     "\\Models",
     "\\Properties",
     "\\Services",
     "\\Validation"
   ],
-  "SelectedNode": "\\Endpoints\\DeviceCommandEndpoints.cs",
+  "SelectedNode": "\\Migrations\\20261017130030_FixDeviceControlStateIdentity.cs",
   "PreviewInSolutionExplorer": false
 }

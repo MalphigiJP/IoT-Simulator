@@ -1,0 +1,598 @@
+
+.sx-command-page {
+  min-height: calc(100vh - 72px);
+  width: 100%;
+  padding: 32px;
+  color: #e9f1fa;
+  background:
+    radial-gradient(
+      ellipse at 10% 0%,
+      rgba(44, 170, 173, 0.12),
+      transparent 40%
+    ),
+    linear-gradient(145deg, #0a1220, #111e30);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.sx-command-page * {
+  box-sizing: border-box;
+}
+
+.sx-command-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  max-width: 1600px;
+  margin: 0 auto 28px;
+}
+
+.sx-command-eyebrow {
+  color: #70ded7;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.sx-command-header h1 {
+  color: #f4f8ff;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 750;
+  letter-spacing: -1px;
+  margin: 0 0 9px;
+}
+
+.sx-command-header p {
+  color: #93a6bf;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 570px;
+}
+
+.sx-command-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sx-command-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #b8cbe0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sx-command-live-indicator span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #53d6a2;
+  box-shadow: 0 0 12px rgba(83, 214, 162, 0.6);
+}
+
+.sx-command-refresh,
+.sx-command-pagination button {
+  border: 1px solid #30435c;
+  background: #18283d;
+  color: #edf5ff;
+  border-radius: 9px;
+  padding: 10px 15px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.sx-command-refresh:hover,
+.sx-command-pagination button:not(:disabled):hover {
+  background: #233953;
+  border-color: #56c8ca;
+}
+
+.sx-command-refresh:focus-visible,
+.sx-command-pagination button:focus-visible,
+.sx-command-filters input:focus-visible,
+.sx-command-filters select:focus-visible {
+  outline: 2px solid #70ded7;
+  outline-offset: 3px;
+}
+
+.sx-command-error-banner,
+.sx-command-inline-error {
+  padding: 13px 16px;
+  color: #ffb5bd;
+  background: rgba(239, 90, 110, 0.09);
+  border: 1px solid rgba(239, 90, 110, 0.3);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.sx-command-error-banner {
+  max-width: 1600px;
+  margin: 0 auto 20px;
+}
+
+.sx-command-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1600px;
+  margin: 0 auto 24px;
+}
+
+.sx-command-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 20px;
+  min-width: 0;
+  background: #152338;
+  border: 1px solid #26374d;
+  border-radius: 14px;
+}
+
+.sx-command-stat > span {
+  color: #9db1c9;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sx-command-stat strong {
+  color: #f4f9ff;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.sx-command-stat small {
+  color: #758ca6;
+  font-size: 11px;
+}
+
+.sx-command-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  align-items: start;
+  gap: 20px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.sx-command-main,
+.sx-command-sidebar {
+  min-width: 0;
+}
+
+.sx-command-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sx-command-panel {
+  background: rgba(19, 32, 50, 0.96);
+  border: 1px solid #293c54;
+  border-radius: 16px;
+  padding: 22px;
+}
+
+.sx-command-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.sx-command-section-heading h2,
+.sx-command-help h2 {
+  margin: 0 0 6px;
+  color: #f3f8ff;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.sx-command-section-heading p {
+  margin: 0;
+  color: #879bb4;
+  font-size: 12px;
+}
+
+.sx-command-counter {
+  padding: 6px 10px;
+  color: #8ee5df;
+  background: rgba(78, 205, 203, 0.1);
+  border: 1px solid rgba(78, 205, 203, 0.22);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.sx-command-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.sx-command-filters input,
+.sx-command-filters select {
+  width: 100%;
+  min-height: 42px;
+  min-width: 0;
+  padding: 10px 12px;
+  color: #e7f0fc;
+  background: #0d1929;
+  border: 1px solid #31455f;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.sx-command-filters input::placeholder {
+  color: #768da7;
+}
+
+.sx-command-device-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sx-command-device {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid #31455c;
+  border-radius: 13px;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(27, 45, 67, 0.9),
+      rgba(18, 30, 47, 0.94)
+    );
+}
+
+.sx-command-device-top,
+.sx-command-device-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sx-command-device-icon {
+  display: grid;
+  place-items: center;
+  width: 37px;
+  height: 37px;
+  color: #84e2df;
+  background: rgba(79, 207, 201, 0.1);
+  border: 1px solid rgba(79, 207, 201, 0.2);
+  border-radius: 10px;
+  font-size: 20px;
+}
+
+.sx-command-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  max-width: 100%;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sx-command-pill.success {
+  color: #80e5bd;
+  background: rgba(57, 189, 131, 0.13);
+}
+
+.sx-command-pill.warning {
+  color: #f8cf85;
+  background: rgba(235, 169, 76, 0.13);
+}
+
+.sx-command-pill.danger {
+  color: #ffa1ad;
+  background: rgba(232, 87, 110, 0.15);
+}
+
+.sx-command-pill.unknown {
+  color: #adc0d8;
+  background: rgba(160, 182, 210, 0.1);
+}
+
+.sx-command-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sx-command-device-heading {
+  margin-top: 18px;
+}
+
+.sx-command-device-heading h3 {
+  margin: 0 0 6px;
+  color: #f2f7ff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sx-command-device-heading p {
+  margin: 0;
+  color: #9bafc7;
+  font-size: 12px;
+}
+
+.sx-command-device-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 14px 0;
+  color: #7694b3;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.sx-command-state-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.sx-command-state-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: rgba(8, 19, 32, 0.55);
+  border: 1px solid #293c53;
+  border-radius: 9px;
+}
+
+.sx-command-state-panel span {
+  color: #8fa6c1;
+  font-size: 10px;
+}
+
+.sx-command-state-panel strong {
+  color: #e9f5ff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sx-command-device-footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #2c4058;
+}
+
+.sx-command-device-footer > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sx-command-mini-label {
+  color: #8298b2;
+  font-size: 10px;
+}
+
+.sx-command-revision {
+  align-self: flex-end;
+  color: #7f95ae;
+  font-size: 10px;
+}
+
+.sx-command-last-action {
+  margin-top: 13px;
+  padding: 10px;
+  color: #a8bcd4;
+  background: rgba(12, 23, 38, 0.65);
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.sx-command-device-error {
+  margin: 12px 0 0;
+  color: #ffadb6;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.sx-command-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  color: #91a7c0;
+  font-size: 12px;
+}
+
+.sx-command-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+
+.sx-command-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sx-command-update-time {
+  margin: 12px 3px 0;
+  color: #8097b2;
+  font-size: 11px;
+}
+
+.sx-command-activity-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sx-command-activity-item {
+  display: flex;
+  gap: 11px;
+  padding: 15px 0;
+  border-top: 1px solid #293b53;
+}
+
+.sx-command-activity-marker {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  margin-top: 4px;
+  background: #63d7d2;
+  border: 2px solid #173c45;
+  border-radius: 50%;
+}
+
+.sx-command-activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sx-command-activity-content strong {
+  color: #e6f0fb;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.sx-command-activity-content span {
+  color: #a0b5cf;
+  font-size: 11px;
+}
+
+.sx-command-activity-content small {
+  color: #6f89a7;
+  font-size: 10px;
+}
+
+.sx-command-empty,
+.sx-command-empty-activity {
+  padding: 36px 18px;
+  text-align: center;
+  color: #98acc4;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sx-command-empty strong {
+  display: block;
+  color: #e8f1fd;
+  margin-bottom: 8px;
+}
+
+.sx-command-empty p {
+  margin: 0;
+}
+
+.sx-command-help {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sx-command-help h2 {
+  margin-bottom: 4px;
+}
+
+.sx-command-help > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.sx-command-help p {
+  color: #91a6bf;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 1150px) {
+  .sx-command-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sx-command-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 780px) {
+  .sx-command-page {
+    padding: 20px;
+  }
+
+  .sx-command-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sx-command-header {
+    flex-direction: column;
+  }
+
+  .sx-command-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sx-command-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .sx-command-page {
+    padding: 14px;
+  }
+
+  .sx-command-panel {
+    padding: 16px;
+  }
+
+  .sx-command-filters,
+  .sx-command-device-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sx-command-section-heading {
+    flex-wrap: wrap;
+  }
+
+  .sx-command-pagination {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx-command-refresh,
+  .sx-command-pagination button {
+    transition: none;
+  }
+}

@@ -101,10 +101,7 @@ namespace SmartX.Api.Migrations
             modelBuilder.Entity("SmartX.Api.Models.DeviceControlState", b =>
                 {
                     b.Property<int>("SensorId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SensorId"));
 
                     b.Property<string>("Category")
                         .IsRequired()

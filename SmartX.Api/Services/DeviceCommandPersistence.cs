@@ -61,17 +61,18 @@ public sealed class DeviceCommandPersistence
         var db = scope.ServiceProvider
             .GetRequiredService<SmartXContext>();
 
-        using var transaction =
-            db.Database.BeginTransaction();
-
         var storedState = db.DeviceControlStates
-            .SingleOrDefault(s => s.SensorId == sensorId);
+            .SingleOrDefault(
+                s => s.SensorId == sensorId
+            );
 
         if (state is null)
         {
             if (storedState is not null)
             {
-                db.DeviceControlStates.Remove(storedState);
+                db.DeviceControlStates.Remove(
+                    storedState
+                );
             }
         }
         else if (storedState is null)
@@ -108,7 +109,8 @@ public sealed class DeviceCommandPersistence
 
         foreach (var current in currentCommands.Values)
         {
-            if (!storedCommands.ContainsKey(current.Id))
+            if (!storedCommands.ContainsKey(
+                    current.Id))
             {
                 db.DeviceCommands.Add(current);
             }
@@ -127,6 +129,5 @@ public sealed class DeviceCommandPersistence
         );
 
         db.SaveChanges();
-        transaction.Commit();
     }
 }

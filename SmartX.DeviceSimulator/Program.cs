@@ -1,5 +1,31 @@
 ﻿using SmartX.DeviceSimulator.Services;
 
+bool loadTestEnabled = string.Equals(
+    Environment.GetEnvironmentVariable("SMARTX_LOAD_TEST"),
+    "true",
+    StringComparison.OrdinalIgnoreCase
+);
+
+if (loadTestEnabled)
+{
+    try
+    {
+        var loadSettings = LoadTestSettings.Load();
+
+        return await FleetLoadTest.RunAsync(
+            loadSettings
+        );
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine(
+            $"Invalid load test configuration: {ex.Message}"
+        );
+
+        return 1;
+    }
+}
+
 SimulationSettings settings;
 
 try

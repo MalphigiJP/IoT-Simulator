@@ -167,7 +167,7 @@ The intended troubleshooting journey is simple: **notice a problem → identify 
 - **Development and demonstrations:** generate representative telemetry volumes, explore dashboard interactions, and demonstrate gateway/data-management concepts without physical hardware.
 
 
-### Part 2
+# Assigment 2
 ## Phase 1: Navigation and Application State establishes the frontend foundation for Smart-X's real-time processing and device management features.
 
 ### Implemented Features
@@ -181,7 +181,7 @@ React, React Router, React Context API, JavaScript (JSX), and CSS.
 
 **Outcome:** Smart-X now supports seamless client-side navigation while retaining important user interface settings. This establishes the foundation for real-time command processing, device control, and predictive monitoring in subsequent phases.
 
-# Part 2 — Phase 2: Real-Time Processing Engine
+## Phase 2: Real-Time Processing Engine
 Phase 2 transforms Smart-X from a basic IoT telemetry gateway into a real-time processing system using advanced C# data structures.
 
 ### Implemented Features
@@ -197,9 +197,38 @@ Incoming HTTP telemetry is queued and processed asynchronously by ASP.NET Core b
 ### Testing and Validation
 Phase 2 includes 35 xUnit test cases covering queue behaviour, prioritisation, device lookups, chronological ordering, duplicate prevention and alert resolution. A Postman collection provides additional API-level functional tests.
 
+## Phase 3: IoT Device Simulation and Load Testing
+Phase 3 uses a standalone .NET 10 IoT device simulator that generates realistic sensor readings and transmits them to the Smart-X API using HTTP.
+
+### Implemented Features
+- Device Profiles: Developed simulated ESP32 environmental sensors, smart plugs, irrigation valves and pump controllers, each generating device-specific telemetry.
+- HTTP Communication: Implemented automatic device registration using MAC addresses and real HTTP telemetry transmission to the Smart-X API.
+- Continuous Simulation: Enabled multiple devices to operate concurrently with configurable reporting intervals, graceful shutdown and live statistics.
+- Fault Injection: Introduced simulated temperature spikes, moisture drops, power surges and device disconnections to test emergency processing and automatic alert resolution.
+- Load Testing: Implemented high-volume simulation supporting up to 2,000 virtual devices, with configurable request rates, bounded concurrency and performance monitoring.
+
+### Technologies Used
+C# 13, .NET 10, HttpClient, asynchronous Tasks, PeriodicTimer, Channels, ASP.NET Core Minimal APIs, Entity Framework Core and SQL Server.
+
+
 ## Reference List
 
-**Assignment 1**
+## Assigment 2
+Microsoft Ignite.2026. Unit testing C# in .NET using dotnet test and xUnit. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-csharp-with-xunit> [Accessed 15 October 2026]
+
+Microsoft Ignite.2026. Unit testing C# in .NET using dotnet test and xUnit. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-csharp-with-xunit> [Accessed 15 October 2026]
+
+Linux Code.2026.C# Queue With Examples: Practical FIFO Patterns for Modern .NET. [online]. Available at: <https://thelinuxcode.com/c-queue-with-examples-practical-fifo-patterns-for-modern-net/> [Accessed 16 October 2026]
+
+GeeksForGeeks.2026.C# PriorityQueue. [online]. Available at: <https://www.geeksforgeeks.org/c-sharp/c-priorityqueue/> [Accessed 16 October 2026]
+
+Microsoft Ignite.2026.SortedDictionary TKey,TValue Class. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.sorteddictionary-2?view=net-10.0> [Accessed 16 October 2026]
+
+Microsoft Ignite.2026.Task asynchronous programming model. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/task-asynchronous-programming-model> [Accessed 17 October 2026]
+
+Microsoft Ingite.2026.PeriodicTimer Class. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/api/system.threading.periodictimer?view=net-10.0/> [Accessed 17 October 2026]
+
+## Assignment 1
 GitHubDocs. 2026 Building and testing Node.js [online] Available at: <https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs > 
 
 Schwarzmuller, M. 2026. React - The Complete Guide (incl. Next.js, Redux). [Online Course] Available at:< https://www.udemy.com/course/react-the-complete-guide-incl-redux/?couponCode=KEEPLEARNING >
@@ -209,3 +238,7 @@ Chart.js. 2025. Bar Chart [online] Available at: < https://www.chartjs.org/docs/
 Choudhary, H. 2026. React - Complete web development course. [Online Course] Available at: < https://www.udemy.com/course/web-dev-master/?couponCode=KEEPLEARNING >
 
 Uppuluri,K. 2024. Mastering ASP.NET Core MVC From Scratch Using C#. [Online Course] Available at:<https://www.udemy.com/course/mastering-aspnetcoremvc/?couponCode=MT261012G1>
+
+
+Chart.js. 2025. Bar Chart [online] Available at: < https://www.chartjs.org/docs/latest/charts/bar.html >
+

@@ -1,11 +1,13 @@
 {
   "ExpandedNodes": [
     "",
+    "\\DTOs",
     "\\Endpoints",
+    "\\Models",
     "\\Properties",
     "\\Services",
     "\\Validation"
   ],
-  "SelectedNode": "\\Properties\\launchSettings.json",
+  "SelectedNode": "\\Services\\DeviceControlCatalog.cs",
   "PreviewInSolutionExplorer": false
 }

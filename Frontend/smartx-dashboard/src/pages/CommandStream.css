@@ -596,3 +596,143 @@
     transition: none;
   }
 }
+
+
+.sx-command-control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 17px;
+  border-top: 1px solid #2c4058;
+}
+
+.sx-command-control-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sx-command-control-heading > span:first-child {
+  color: #e4eefb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sx-command-control-type {
+  color: #85dcd8;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.sx-command-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.sx-command-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.sx-command-action-on {
+  color: #98f2cf;
+  background: rgba(43, 174, 122, 0.12);
+  border-color: rgba(70, 199, 149, 0.3);
+}
+
+.sx-command-action-off {
+  color: #f6cba4;
+  background: rgba(219, 139, 72, 0.11);
+  border-color: rgba(228, 149, 86, 0.3);
+}
+
+.sx-command-action-on:not(:disabled):hover {
+  background: rgba(43, 174, 122, 0.25);
+  border-color: #61d9ab;
+  transform: translateY(-1px);
+}
+
+.sx-command-action-off:not(:disabled):hover {
+  background: rgba(219, 139, 72, 0.24);
+  border-color: #ebaf79;
+  transform: translateY(-1px);
+}
+
+.sx-command-action-active {
+  border-color: currentColor;
+}
+
+.sx-command-action:disabled {
+  opacity: 0.44;
+  cursor: not-allowed;
+}
+
+.sx-command-action:focus-visible {
+  outline: 2px solid #76e8df;
+  outline-offset: 3px;
+}
+
+.sx-command-control-hint {
+  margin: 0;
+  min-height: 28px;
+  color: #8ca2bd;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.sx-command-feedback {
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.6;
+}
+
+.sx-command-feedback.success {
+  color: #9ceacb;
+  background: rgba(51, 170, 124, 0.1);
+  border: 1px solid rgba(51, 170, 124, 0.3);
+}
+
+.sx-command-feedback.error {
+  color: #ffb1bc;
+  background: rgba(227, 85, 110, 0.1);
+  border: 1px solid rgba(227, 85, 110, 0.32);
+}
+
+.sx-command-last-report {
+  margin-top: 12px;
+  color: #7f96b2;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 440px) {
+  .sx-command-action-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx-command-action {
+    transition: none;
+  }
+}

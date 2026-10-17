@@ -1,6 +1,6 @@
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  createDeviceCommand,
   getCommandSensors,
   getDeviceControl,
   getDeviceCommands,
@@ -16,21 +16,35 @@ const DEVICE_TYPES = {
     label: "Smart Plug",
     target: "Relay",
     symbol: "◈",
-    description: "Electrical relay control",
+    actions: [
+      { state: true, label: "Turn ON" },
+      { state: false, label: "Turn OFF" },
+    ],
   },
   irrigationvalve: {
     label: "Irrigation Valve",
     target: "Valve",
     symbol: "◉",
-    description: "Water flow control",
+    actions: [
+      { state: true, label: "Open valve" },
+      { state: false, label: "Close valve" },
+    ],
   },
   pumpcontroller: {
     label: "Pump Controller",
     target: "Pump",
     symbol: "◆",
-    description: "Water pump control",
+    actions: [
+      { state: true, label: "Start pump" },
+      { state: false, label: "Stop pump" },
+    ],
   },
 };
+
+const OUTSTANDING_STATUSES = new Set([
+  "Pending",
+  "Delivered",
+]);
 
 function getDeviceType(category) {
   return DEVICE_TYPES[
@@ -43,16 +57,25 @@ function formatState(target, value) {
     return "Unknown";
   }
 
-  const states = {
-    Pump: value ? "Running" : "Stopped",
-    Valve: value ? "Open" : "Closed",
-    Relay: value ? "On" : "Off",
-  };
+  if (target === "Pump") {
+    return value ? "Running" : "Stopped";
+  }
 
-  return states[target] || (value ? "On" : "Off");
+  if (target === "Valve") {
+    return value ? "Open" : "Closed";
+  }
+
+  return value ? "On" : "Off";
 }
 
-function getSyncStatus(control) {
+function getSyncStatus(control, latestCommand) {
+  if (OUTSTANDING_STATUSES.has(latestCommand?.status)) {
+    return {
+      label: "Awaiting device",
+      tone: "warning",
+    };
+  }
+
   if (
     !control ||
     control.desiredState == null ||
@@ -84,18 +107,16 @@ function formatTime(value) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return "Not available";
-  }
-
-  return date.toLocaleString();
+  return Number.isNaN(date.getTime())
+    ? "Not available"
+    : date.toLocaleString();
 }
 
 function CommandStatus({ status }) {
   const tone = {
     Applied: "success",
-    Delivered: "warning",
     Pending: "warning",
+    Delivered: "warning",
     Failed: "danger",
     Cancelled: "unknown",
   }[status] || "unknown";
@@ -107,11 +128,60 @@ function CommandStatus({ status }) {
   );
 }
 
-function DeviceCard({ sensor, snapshot, loading }) {
+function DeviceCard({
+  sensor,
+  snapshot,
+  loading,
+  busy,
+  feedback,
+  onIssueCommand,
+}) {
   const type = getDeviceType(sensor.category);
   const control = snapshot?.control;
   const latestCommand = snapshot?.latestCommand;
-  const syncStatus = getSyncStatus(control);
+
+  const syncStatus = getSyncStatus(
+    control,
+    latestCommand
+  );
+
+  const outstanding = OUTSTANDING_STATUSES.has(
+    latestCommand?.status
+  );
+
+  const unconfirmed = control?.reportedState == null;
+
+  const controlsDisabled =
+    busy ||
+    outstanding ||
+    Boolean(snapshot?.error) ||
+    unconfirmed;
+
+  let feedbackMessage = feedback?.message || "";
+  let feedbackTone = feedback?.tone || "success";
+
+  if (
+    feedback?.commandId &&
+    feedback.commandId === latestCommand?.commandId
+  ) {
+    if (latestCommand.status === "Applied") {
+      feedbackMessage =
+        "Device acknowledged and applied the command.";
+      feedbackTone = "success";
+    }
+
+    if (latestCommand.status === "Failed") {
+      feedbackMessage =
+        latestCommand.failureReason ||
+        "The device could not apply the command.";
+      feedbackTone = "error";
+    }
+
+    if (latestCommand.status === "Cancelled") {
+      feedbackMessage = "The command was cancelled.";
+      feedbackTone = "error";
+    }
+  }
 
   return (
     <article className="sx-command-device">
@@ -140,12 +210,16 @@ function DeviceCard({ sensor, snapshot, loading }) {
 
       <div className="sx-command-device-heading">
         <h3>{type?.label || sensor.category}</h3>
-        <p>{sensor.location || "Location not specified"}</p>
+        <p>
+          {sensor.location || "Location not specified"}
+        </p>
       </div>
 
       <div className="sx-command-device-identity">
         <span>Sensor #{sensor.id}</span>
-        <span>{sensor.macAddress || "No MAC address"}</span>
+        <span>
+          {sensor.macAddress || "No MAC address"}
+        </span>
       </div>
 
       <div className="sx-command-state-grid">
@@ -170,6 +244,80 @@ function DeviceCard({ sensor, snapshot, loading }) {
         </div>
       </div>
 
+      <div className="sx-command-control-section">
+        <div className="sx-command-control-heading">
+          <span>Manual device control</span>
+          <span className="sx-command-control-type">
+            {type?.target}
+          </span>
+        </div>
+
+        <div className="sx-command-action-grid">
+          {type?.actions.map((action) => {
+            const alreadyApplied =
+              control?.desiredState === action.state &&
+              control?.reportedState === action.state &&
+              !outstanding;
+
+            const disabled =
+              controlsDisabled || alreadyApplied;
+
+            return (
+              <button
+                key={String(action.state)}
+                type="button"
+                className={[
+                  "sx-command-action",
+                  action.state
+                    ? "sx-command-action-on"
+                    : "sx-command-action-off",
+                  alreadyApplied
+                    ? "sx-command-action-active"
+                    : "",
+                ].join(" ")}
+                disabled={disabled}
+                aria-label={`${action.label} for sensor ${sensor.id}`}
+                onClick={() =>
+                  onIssueCommand(
+                    sensor,
+                    type.target,
+                    action.state
+                  )
+                }
+              >
+                <span>
+                  {action.state ? "●" : "○"}
+                </span>
+                {action.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="sx-command-control-hint">
+          {busy
+            ? "Submitting command to Smart-X..."
+            : outstanding
+              ? "A command is in progress. Wait for device acknowledgement."
+              : unconfirmed
+                ? "Waiting for the device to report its initial state."
+                : "Commands require confirmation before submission."}
+        </p>
+
+        {feedbackMessage && (
+          <div
+            className={`sx-command-feedback ${feedbackTone}`}
+            role={
+              feedbackTone === "error"
+                ? "alert"
+                : "status"
+            }
+          >
+            {feedbackMessage}
+          </div>
+        )}
+      </div>
+
       <div className="sx-command-device-footer">
         <div>
           <span className="sx-command-mini-label">
@@ -190,13 +338,18 @@ function DeviceCard({ sensor, snapshot, loading }) {
           {latestCommand.origin === "Undo"
             ? "Undo"
             : "Manual"}{" "}
-          · {latestCommand.target}{" "}
-          · {formatState(
+          · {latestCommand.target} ·{" "}
+          {formatState(
             latestCommand.target,
             latestCommand.requestedState
           )}
         </div>
       )}
+
+      <div className="sx-command-last-report">
+        Last confirmed state:{" "}
+        {formatTime(control?.lastReportedAtUtc)}
+      </div>
 
       {snapshot?.error && (
         <p className="sx-command-device-error">
@@ -222,7 +375,10 @@ function ActivityFeed({ events, error }) {
       </div>
 
       {error && (
-        <div className="sx-command-inline-error">
+        <div
+          className="sx-command-inline-error"
+          role="alert"
+        >
           {error}
         </div>
       )}
@@ -277,6 +433,14 @@ export default function CommandStream() {
   const [events, setEvents] = useState([]);
   const [auditError, setAuditError] = useState("");
 
+  const [submittingBySensor, setSubmittingBySensor] =
+    useState({});
+
+  const [feedbackBySensor, setFeedbackBySensor] =
+    useState({});
+
+  const submissionLocks = useRef(new Set());
+
   const [lastUpdated, setLastUpdated] = useState(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
 
@@ -314,7 +478,9 @@ export default function CommandStream() {
         sensor.category,
         getDeviceType(sensor.category)?.label,
       ].some((value) =>
-        String(value ?? "").toLowerCase().includes(query)
+        String(value ?? "")
+          .toLowerCase()
+          .includes(query)
       );
     });
   }, [actuatorSensors, search, typeFilter]);
@@ -356,12 +522,10 @@ export default function CommandStream() {
           controller.signal
         );
 
-        if (!active) {
-          return;
+        if (active) {
+          setSensors(result);
+          setSensorError("");
         }
-
-        setSensors(result);
-        setSensorError("");
       } catch (error) {
         if (active && !controller.signal.aborted) {
           setSensorError(
@@ -415,22 +579,32 @@ export default function CommandStream() {
                 ),
               ]);
 
+            const control =
+              controlResult.status === "fulfilled"
+                ? controlResult.value
+                : null;
+
+            const latestCommand =
+              historyResult.status === "fulfilled"
+                ? historyResult.value[0] || null
+                : null;
+
+            const error =
+              controlResult.status === "rejected"
+                ? getCommandErrorMessage(
+                    controlResult.reason
+                  )
+                : historyResult.status === "rejected"
+                  ? getCommandErrorMessage(
+                      historyResult.reason
+                    )
+                  : "";
+
             return {
               sensorId: sensor.id,
-              control:
-                controlResult.status === "fulfilled"
-                  ? controlResult.value
-                  : null,
-              latestCommand:
-                historyResult.status === "fulfilled"
-                  ? historyResult.value[0] || null
-                  : null,
-              error:
-                controlResult.status === "rejected"
-                  ? getCommandErrorMessage(
-                      controlResult.reason
-                    )
-                  : "",
+              control,
+              latestCommand,
+              error,
             };
           })
         );
@@ -447,6 +621,12 @@ export default function CommandStream() {
 
         setSnapshots(next);
         setLastUpdated(new Date());
+      } catch (error) {
+        if (active && !controller.signal.aborted) {
+          setSensorError(
+            getCommandErrorMessage(error)
+          );
+        }
       } finally {
         if (active) {
           setLoadingPage(false);
@@ -512,18 +692,150 @@ export default function CommandStream() {
     };
   }, [refreshVersion]);
 
+  async function handleIssueCommand(
+    sensor,
+    target,
+    requestedState
+  ) {
+    if (submissionLocks.current.has(sensor.id)) {
+      return;
+    }
+
+    const snapshot = snapshots[sensor.id];
+
+    if (
+      OUTSTANDING_STATUSES.has(
+        snapshot?.latestCommand?.status
+      )
+    ) {
+      setFeedbackBySensor((previous) => ({
+        ...previous,
+        [sensor.id]: {
+          tone: "error",
+          message:
+            "Wait for the outstanding command to finish.",
+        },
+      }));
+
+      return;
+    }
+
+    if (
+      !snapshot?.control ||
+      snapshot.control.reportedState == null ||
+      snapshot.error
+    ) {
+      setFeedbackBySensor((previous) => ({
+        ...previous,
+        [sensor.id]: {
+          tone: "error",
+          message:
+            "A confirmed device state is required before issuing a command.",
+        },
+      }));
+
+      return;
+    }
+
+    const device = getDeviceType(sensor.category);
+    const desiredLabel = formatState(
+      target,
+      requestedState
+    );
+
+    const confirmed = window.confirm(
+      `Confirm manual device command\n\n` +
+      `Device: ${device?.label || sensor.category}\n` +
+      `Sensor ID: ${sensor.id}\n` +
+      `Location: ${sensor.location || "Unknown"}\n` +
+      `Target: ${target}\n` +
+      `Requested state: ${desiredLabel}\n\n` +
+      `The request will remain pending until the device acknowledges it.\n\n` +
+      `Submit this command?`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    submissionLocks.current.add(sensor.id);
+
+    setSubmittingBySensor((previous) => ({
+      ...previous,
+      [sensor.id]: true,
+    }));
+
+    setFeedbackBySensor((previous) => ({
+      ...previous,
+      [sensor.id]: null,
+    }));
+
+    try {
+      const command = await createDeviceCommand(
+        sensor.id,
+        target,
+        requestedState
+      );
+
+      setSnapshots((previous) => ({
+        ...previous,
+        [sensor.id]: {
+          ...previous[sensor.id],
+          latestCommand: command,
+          control: {
+            ...previous[sensor.id]?.control,
+            desiredState: requestedState,
+            lastCommandId: command.commandId,
+          },
+        },
+      }));
+
+      setFeedbackBySensor((previous) => ({
+        ...previous,
+        [sensor.id]: {
+          tone: "success",
+          commandId: command.commandId,
+          message:
+            "Command accepted. Waiting for device acknowledgement.",
+        },
+      }));
+    } catch (error) {
+      setFeedbackBySensor((previous) => ({
+        ...previous,
+        [sensor.id]: {
+          tone: "error",
+          message: getCommandErrorMessage(error),
+        },
+      }));
+    } finally {
+      submissionLocks.current.delete(sensor.id);
+
+      setSubmittingBySensor((previous) => ({
+        ...previous,
+        [sensor.id]: false,
+      }));
+
+      setRefreshVersion((value) => value + 1);
+    }
+  }
+
   const visibleSnapshots = visibleSensors
     .map((sensor) => snapshots[sensor.id])
     .filter((item) => item?.control);
 
   const syncedCount = visibleSnapshots.filter(
     (item) =>
-      getSyncStatus(item.control).tone === "success"
+      getSyncStatus(
+        item.control,
+        item.latestCommand
+      ).tone === "success"
   ).length;
 
-  const mismatchCount = visibleSnapshots.filter(
+  const awaitingCount = visibleSnapshots.filter(
     (item) =>
-      getSyncStatus(item.control).tone === "warning"
+      OUTSTANDING_STATUSES.has(
+        item.latestCommand?.status
+      )
   ).length;
 
   const latestLabel = lastUpdated
@@ -541,8 +853,8 @@ export default function CommandStream() {
           <h1>Command Centre</h1>
 
           <p>
-            Monitor actuator state, command delivery and
-            persistent operational activity.
+            Monitor actuators, issue manual commands and
+            follow device acknowledgements.
           </p>
         </div>
 
@@ -587,8 +899,8 @@ export default function CommandStream() {
         </div>
 
         <div className="sx-command-stat">
-          <span>State mismatches</span>
-          <strong>{mismatchCount}</strong>
+          <span>Awaiting acknowledgement</span>
+          <strong>{awaitingCount}</strong>
           <small>Currently visible devices</small>
         </div>
 
@@ -606,7 +918,7 @@ export default function CommandStream() {
               <div>
                 <h2>Controllable devices</h2>
                 <p>
-                  Desired and device-reported states
+                  Live control monitoring and manual overrides
                 </p>
               </div>
 
@@ -622,7 +934,7 @@ export default function CommandStream() {
                 onChange={(event) =>
                   setSearch(event.target.value)
                 }
-                placeholder="Search by device, MAC or location"
+                placeholder="Search device, MAC or location"
                 aria-label="Search devices"
               />
 
@@ -656,8 +968,7 @@ export default function CommandStream() {
               <div className="sx-command-empty">
                 <strong>No matching actuators</strong>
                 <p>
-                  Start the four-device simulator or
-                  adjust the current search filters.
+                  Start the simulator or adjust your filters.
                 </p>
               </div>
             ) : (
@@ -668,6 +979,11 @@ export default function CommandStream() {
                     sensor={sensor}
                     snapshot={snapshots[sensor.id]}
                     loading={loadingPage}
+                    busy={Boolean(
+                      submittingBySensor[sensor.id]
+                    )}
+                    feedback={feedbackBySensor[sensor.id]}
+                    onIssueCommand={handleIssueCommand}
                   />
                 ))}
               </div>
@@ -718,25 +1034,24 @@ export default function CommandStream() {
           />
 
           <section className="sx-command-panel sx-command-help">
-            <h2>Control state explained</h2>
+            <h2>Manual control guidance</h2>
 
             <div>
               <span className="sx-command-pill success">
                 In sync
               </span>
               <p>
-                The latest reported state matches
-                the requested state.
+                Desired and reported states match.
               </p>
             </div>
 
             <div>
               <span className="sx-command-pill warning">
-                State mismatch
+                Awaiting device
               </span>
               <p>
-                The reported state differs from
-                the requested state.
+                A command is pending or delivered.
+                Additional commands are disabled.
               </p>
             </div>
 
@@ -745,8 +1060,16 @@ export default function CommandStream() {
                 Unconfirmed
               </span>
               <p>
-                Smart-X has not received enough
-                state information for comparison.
+                The device has not supplied a confirmed
+                control state yet.
+              </p>
+            </div>
+
+            <div>
+              <p>
+                An accepted command is not proof of
+                execution. Wait for Applied status
+                and matching reported state.
               </p>
             </div>
           </section>

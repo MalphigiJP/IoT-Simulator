@@ -178,6 +178,131 @@ public static class DeviceCommandEndpoints
             }
         );
 
+
+        // ==========================================
+        // CHUNK 4.4 - GET UNDO AVAILABILITY
+        // ==========================================
+
+        devices.MapGet(
+            "/{sensorId:int}/commands/undo/status",
+            async (
+                int sensorId,
+                SmartXContext db,
+                DeviceCommandService commands,
+                CancellationToken ct) =>
+            {
+                var sensor = await db.Sensors
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        s => s.Id == sensorId,
+                        ct
+                    );
+
+                if (sensor is null)
+                {
+                    return Results.NotFound(new
+                    {
+                        error = "Sensor not found."
+                    });
+                }
+
+                var availability =
+                    commands.GetUndoAvailability(sensor);
+
+                return Results.Ok(new
+                {
+                    sensorId,
+                    canUndo = availability.CanUndo,
+                    stackDepth = availability.StackDepth,
+                    sourceCommandId =
+                        availability.SourceCommandId,
+                    target = availability.Target?.ToString(),
+                    restoreState = availability.RestoreState,
+                    reason = availability.Reason.ToString()
+                });
+            }
+        );
+
+        devices.MapPost(
+            "/{sensorId:int}/commands/undo",
+            async (
+                int sensorId,
+                SmartXContext db,
+                DeviceCommandService commands,
+                CancellationToken ct) =>
+            {
+                var sensor = await db.Sensors
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        s => s.Id == sensorId,
+                        ct
+                    );
+
+                if (sensor is null)
+                {
+                    return Results.NotFound(new
+                    {
+                        error = "Sensor not found."
+                    });
+                }
+
+                var result = commands.CreateUndo(sensor);
+
+                return result.Outcome switch
+                {
+                    UndoCreateOutcome.ReadOnlyDevice =>
+                        Results.BadRequest(new
+                        {
+                            error =
+                                "This device does not support undo."
+                        }),
+
+                    UndoCreateOutcome.NoHistory =>
+                        Results.Conflict(new
+                        {
+                            error =
+                                "No successfully applied reversible " +
+                                "manual command is available."
+                        }),
+
+                    UndoCreateOutcome.DeviceBusy =>
+                        Results.Conflict(new
+                        {
+                            error =
+                                "Wait for the outstanding command " +
+                                "to finish before undoing."
+                        }),
+
+                    UndoCreateOutcome.UnknownState =>
+                        Results.Conflict(new
+                        {
+                            error =
+                                "The current device state is not confirmed."
+                        }),
+
+                    UndoCreateOutcome.StateChanged =>
+                        Results.Conflict(new
+                        {
+                            error =
+                                "The device state has changed since " +
+                                "the command was applied. " +
+                                "Automatic undo is unsafe."
+                        }),
+
+                    UndoCreateOutcome.Created =>
+                        Results.Created(
+                            $"/api/commands/{result.Command!.Id}",
+                            ToCommandResponse(result.Command!)
+                        ),
+
+                    _ => Results.Problem(
+                        "Unexpected undo creation outcome."
+                    )
+                };
+            }
+        );
+
+
         devices.MapPost(
             "/{sensorId:int}/commands/{commandId:guid}/ack",
             async (

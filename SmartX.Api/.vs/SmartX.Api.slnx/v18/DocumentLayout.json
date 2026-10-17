@@ -5,6 +5,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\emeris\\Documents\\Work\\smartx-project\\SmartX.Api\\Endpoints\\DeviceCommandEndpoints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Endpoints\\DeviceCommandEndpoints.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\emeris\\Documents\\Work\\smartx-project\\SmartX.Api\\Services\\DeviceCommandService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Services\\DeviceCommandService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -28,9 +32,22 @@
               "RelativeDocumentMoniker": "Endpoints\\DeviceCommandEndpoints.cs",
               "ToolTip": "C:\\Users\\emeris\\Documents\\Work\\smartx-project\\SmartX.Api\\Endpoints\\DeviceCommandEndpoints.cs",
               "RelativeToolTip": "Endpoints\\DeviceCommandEndpoints.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAM8AAAAAAAAAAAAqwOAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-17T05:09:13.909Z",
+              "WhenOpened": "2026-10-17T05:37:30.912Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "DeviceCommandService.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Documents\\Work\\smartx-project\\SmartX.Api\\Services\\DeviceCommandService.cs",
+              "RelativeDocumentMoniker": "Services\\DeviceCommandService.cs",
+              "ToolTip": "C:\\Users\\emeris\\Documents\\Work\\smartx-project\\SmartX.Api\\Services\\DeviceCommandService.cs",
+              "RelativeToolTip": "Services\\DeviceCommandService.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-10-17T05:32:09.182Z",
               "EditorCaption": ""
             }
           ]

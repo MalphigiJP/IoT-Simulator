@@ -57,12 +57,45 @@ public sealed record ControlReportResult(
     DeviceControlState State
 );
 
+public enum UndoAvailabilityReason
+{
+    Available,
+    ReadOnlyDevice,
+    NoHistory,
+    DeviceBusy,
+    UnknownState,
+    StateChanged
+}
+
+public sealed record UndoAvailability(
+    bool CanUndo,
+    int StackDepth,
+    Guid? SourceCommandId,
+    DeviceControlTarget? Target,
+    bool? RestoreState,
+    UndoAvailabilityReason Reason
+);
+
+public enum UndoCreateOutcome
+{
+    Created,
+    ReadOnlyDevice,
+    NoHistory,
+    DeviceBusy,
+    UnknownState,
+    StateChanged
+}
+
+public sealed record UndoCreationResult(
+    UndoCreateOutcome Outcome,
+    DeviceCommand? Command,
+    DeviceControlState State
+);
+
 public sealed class DeviceCommandService
 {
     private readonly object _sync = new();
 
-    // Unacknowledged deliveries can be reclaimed
-    // if the original response was lost.
     public static readonly TimeSpan DeliveryLease =
         TimeSpan.FromSeconds(15);
 
@@ -74,6 +107,16 @@ public sealed class DeviceCommandService
 
     private readonly Dictionary<int, List<Guid>>
         _commandsBySensor = new();
+
+    private sealed record UndoEntry(
+        Guid SourceCommandId,
+        DeviceControlTarget Target,
+        bool PreviousState,
+        bool AppliedState
+    );
+
+    private readonly Dictionary<int, Stack<UndoEntry>>
+        _undoStacks = new();
 
     public DeviceControlState GetOrInitialize(
         Sensor sensor)
@@ -138,17 +181,7 @@ public sealed class DeviceCommandService
                 CreatedAtUtc = now
             };
 
-            _commands.Add(command.Id, command);
-
-            if (!_commandsBySensor.TryGetValue(
-                    sensor.Id,
-                    out var ids))
-            {
-                ids = new List<Guid>();
-                _commandsBySensor.Add(sensor.Id, ids);
-            }
-
-            ids.Add(command.Id);
+            AddCommandLocked(command);
 
             var updated = state with
             {
@@ -166,6 +199,180 @@ public sealed class DeviceCommandService
                 updated
             );
         }
+    }
+
+    public UndoAvailability GetUndoAvailability(
+        Sensor sensor)
+    {
+        ArgumentNullException.ThrowIfNull(sensor);
+
+        lock (_sync)
+        {
+            var state = GetOrInitializeLocked(sensor);
+
+            return GetUndoAvailabilityLocked(state);
+        }
+    }
+
+    public UndoCreationResult CreateUndo(
+        Sensor sensor)
+    {
+        ArgumentNullException.ThrowIfNull(sensor);
+
+        lock (_sync)
+        {
+            var state = GetOrInitializeLocked(sensor);
+
+            var availability =
+                GetUndoAvailabilityLocked(state);
+
+            if (!availability.CanUndo)
+            {
+                var outcome = availability.Reason switch
+                {
+                    UndoAvailabilityReason.ReadOnlyDevice =>
+                        UndoCreateOutcome.ReadOnlyDevice,
+
+                    UndoAvailabilityReason.NoHistory =>
+                        UndoCreateOutcome.NoHistory,
+
+                    UndoAvailabilityReason.DeviceBusy =>
+                        UndoCreateOutcome.DeviceBusy,
+
+                    UndoAvailabilityReason.UnknownState =>
+                        UndoCreateOutcome.UnknownState,
+
+                    _ => UndoCreateOutcome.StateChanged
+                };
+
+                return new(outcome, null, state);
+            }
+
+            var entry = _undoStacks[sensor.Id].Peek();
+
+            DateTime now = DateTime.UtcNow;
+
+            var command = new DeviceCommand
+            {
+                Id = Guid.NewGuid(),
+                SensorId = sensor.Id,
+                Target = entry.Target,
+
+                // Restore the state that existed
+                // before the original manual command.
+                RequestedState = entry.PreviousState,
+
+                // Current desired state, before undo.
+                PreviousDesiredState = state.DesiredState,
+
+                Origin = DeviceCommandOrigin.Undo,
+
+                UndoOfCommandId = entry.SourceCommandId,
+
+                Status = DeviceCommandStatus.Pending,
+                CreatedAtUtc = now
+            };
+
+            AddCommandLocked(command);
+
+            var updated = state with
+            {
+                DesiredState = entry.PreviousState,
+                LastCommandId = command.Id,
+                LastDesiredChangeAtUtc = now,
+                Revision = state.Revision + 1
+            };
+
+            _states[sensor.Id] = updated;
+
+            return new(
+                UndoCreateOutcome.Created,
+                command,
+                updated
+            );
+        }
+    }
+
+    private UndoAvailability GetUndoAvailabilityLocked(
+        DeviceControlState state)
+    {
+        _undoStacks.TryGetValue(
+            state.SensorId,
+            out var stack
+        );
+
+        int depth = stack?.Count ?? 0;
+
+        if (state.SupportedTarget is null)
+        {
+            return new(
+                false, depth, null, null, null,
+                UndoAvailabilityReason.ReadOnlyDevice
+            );
+        }
+
+        if (stack is null || stack.Count == 0)
+        {
+            return new(
+                false, 0, null, null, null,
+                UndoAvailabilityReason.NoHistory
+            );
+        }
+
+        var entry = stack.Peek();
+
+        if (HasOutstandingCommandLocked(state.SensorId))
+        {
+            return new(
+                false,
+                depth,
+                entry.SourceCommandId,
+                entry.Target,
+                entry.PreviousState,
+                UndoAvailabilityReason.DeviceBusy
+            );
+        }
+
+        // We need both a desired and confirmed state
+        // before automatically reversing a command.
+        if (!state.DesiredState.HasValue ||
+            !state.ReportedState.HasValue)
+        {
+            return new(
+                false,
+                depth,
+                entry.SourceCommandId,
+                entry.Target,
+                entry.PreviousState,
+                UndoAvailabilityReason.UnknownState
+            );
+        }
+
+        bool matches =
+            state.SupportedTarget == entry.Target &&
+            state.DesiredState.Value == entry.AppliedState &&
+            state.ReportedState.Value == entry.AppliedState;
+
+        if (!matches)
+        {
+            return new(
+                false,
+                depth,
+                entry.SourceCommandId,
+                entry.Target,
+                entry.PreviousState,
+                UndoAvailabilityReason.StateChanged
+            );
+        }
+
+        return new(
+            true,
+            depth,
+            entry.SourceCommandId,
+            entry.Target,
+            entry.PreviousState,
+            UndoAvailabilityReason.Available
+        );
     }
 
     public DeviceCommand? ClaimNextForDevice(
@@ -244,8 +451,6 @@ public sealed class DeviceCommandService
                 out var state
             );
 
-            // A previously successful acknowledgement
-            // may be repeated after a lost HTTP reply.
             if (command.Status ==
                     DeviceCommandStatus.Applied &&
                 applied &&
@@ -269,10 +474,9 @@ public sealed class DeviceCommandService
                 );
             }
 
-            // A device may only acknowledge a command
-            // that the server actually delivered.
             if (command.Status !=
-                DeviceCommandStatus.Delivered)
+                DeviceCommandStatus.Delivered ||
+                state is null)
             {
                 return new(
                     CommandAckOutcome.InvalidStatus,
@@ -281,17 +485,6 @@ public sealed class DeviceCommandService
                 );
             }
 
-            if (state is null)
-            {
-                return new(
-                    CommandAckOutcome.InvalidStatus,
-                    command,
-                    null
-                );
-            }
-
-            // A successful execution must confirm
-            // the exact state the operator requested.
             if (applied &&
                 reportedState != command.RequestedState)
             {
@@ -300,6 +493,28 @@ public sealed class DeviceCommandService
                     command,
                     state
                 );
+            }
+
+            if (applied &&
+                command.Origin == DeviceCommandOrigin.Undo)
+            {
+                bool matchesTop =
+                    _undoStacks.TryGetValue(
+                        sensorId,
+                        out var undoStack
+                    ) &&
+                    undoStack.TryPeek(out var top) &&
+                    command.UndoOfCommandId ==
+                        top.SourceCommandId;
+
+                if (!matchesTop)
+                {
+                    return new(
+                        CommandAckOutcome.InvalidStatus,
+                        command,
+                        state
+                    );
+                }
             }
 
             DateTime now = DateTime.UtcNow;
@@ -323,7 +538,6 @@ public sealed class DeviceCommandService
 
             var updated = state with
             {
-
                 DesiredState = applied
                     ? command.RequestedState
                     : command.PreviousDesiredState
@@ -349,6 +563,45 @@ public sealed class DeviceCommandService
             };
 
             _states[sensorId] = updated;
+
+            if (applied)
+            {
+                if (command.Origin ==
+                    DeviceCommandOrigin.Manual)
+                {
+
+                    if (command.PreviousDesiredState.HasValue &&
+                        command.PreviousDesiredState.Value !=
+                            command.RequestedState)
+                    {
+                        if (!_undoStacks.TryGetValue(
+                                sensorId,
+                                out var stack))
+                        {
+                            stack = new Stack<UndoEntry>();
+
+                            _undoStacks.Add(
+                                sensorId,
+                                stack
+                            );
+                        }
+
+                        stack.Push(new UndoEntry(
+                            command.Id,
+                            command.Target,
+                            command.PreviousDesiredState.Value,
+                            command.RequestedState
+                        ));
+                    }
+                }
+                else if (command.Origin ==
+                         DeviceCommandOrigin.Undo)
+                {
+                    // The reversal really happened.
+                    // Only NOW may the stack shrink.
+                    _undoStacks[sensorId].Pop();
+                }
+            }
 
             return new(
                 applied
@@ -404,7 +657,6 @@ public sealed class DeviceCommandService
             {
                 ReportedState = reportedState,
                 DesiredState = desired,
-
                 LastReportedAtUtc = now,
 
                 LastDesiredChangeAtUtc =
@@ -521,6 +773,8 @@ public sealed class DeviceCommandService
         {
             _states.Remove(sensorId);
 
+            _undoStacks.Remove(sensorId);
+
             if (_commandsBySensor.Remove(
                     sensorId,
                     out var ids))
@@ -531,6 +785,26 @@ public sealed class DeviceCommandService
                 }
             }
         }
+    }
+
+    private void AddCommandLocked(
+        DeviceCommand command)
+    {
+        _commands.Add(command.Id, command);
+
+        if (!_commandsBySensor.TryGetValue(
+                command.SensorId,
+                out var ids))
+        {
+            ids = new List<Guid>();
+
+            _commandsBySensor.Add(
+                command.SensorId,
+                ids
+            );
+        }
+
+        ids.Add(command.Id);
     }
 
     private bool HasOutstandingCommandLocked(
@@ -549,6 +823,7 @@ public sealed class DeviceCommandService
                 DeviceCommandStatus.Delivered
         );
     }
+
 
     private DeviceControlState GetOrInitializeLocked(
         Sensor sensor)
@@ -618,8 +893,6 @@ public sealed class DeviceCommandService
                     else if (command.Status ==
                         DeviceCommandStatus.Delivered)
                     {
-                        // Already delivered: execution
-                        // cannot be ruled out.
                         _commands[id] = command with
                         {
                             Status =
@@ -634,6 +907,8 @@ public sealed class DeviceCommandService
                     }
                 }
             }
+
+            _undoStacks.Remove(sensor.Id);
 
             var reset =
                 DeviceControlCatalog.CreateInitialState(

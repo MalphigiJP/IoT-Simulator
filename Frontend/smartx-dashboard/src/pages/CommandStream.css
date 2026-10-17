@@ -736,3 +736,359 @@
     transition: none;
   }
 }
+
+
+.sx-command-undo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  margin-top: 4px;
+  border: 1px solid rgba(124, 151, 187, 0.24);
+  border-radius: 11px;
+  background: rgba(10, 21, 36, 0.65);
+}
+
+.sx-command-undo-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sx-command-undo-heading > span:first-child {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e2edf9;
+}
+
+.sx-command-undo-panel p {
+  color: #95acc5;
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sx-command-undo-button {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid rgba(164, 143, 242, 0.45);
+  border-radius: 9px;
+  color: #d5c8ff;
+  background: rgba(130, 102, 221, 0.17);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.sx-command-undo-button:not(:disabled):hover {
+  background: rgba(130, 102, 221, 0.31);
+  border-color: #b09cff;
+}
+
+.sx-command-undo-button:disabled {
+  opacity: 0.43;
+  cursor: not-allowed;
+}
+
+.sx-command-undo-button:focus-visible {
+  outline: 2px solid #c6b7ff;
+  outline-offset: 3px;
+}
+
+.sx-command-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  color: #879eb9;
+  font-size: 10px;
+}
+
+.sx-command-history-open {
+  padding: 7px 10px;
+  background: transparent;
+  color: #83dfd8;
+  border: 1px solid rgba(86, 202, 199, 0.28);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sx-command-history-open:hover,
+.sx-command-history-open.selected {
+  background: rgba(77, 206, 202, 0.13);
+  border-color: rgba(86, 202, 199, 0.55);
+}
+
+.sx-command-history-container {
+  max-width: 1600px;
+  margin: 24px auto 0;
+}
+
+.sx-command-history-panel {
+  min-width: 0;
+}
+
+.sx-command-history-close {
+  padding: 9px 13px;
+  background: rgba(46, 67, 91, 0.55);
+  color: #e4edf8;
+  border: 1px solid #41566f;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+.sx-command-history-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 130px;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.sx-command-history-filters input,
+.sx-command-history-filters select,
+.sx-command-audit-filters input,
+.sx-command-audit-filters select {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  background: #0d1929;
+  color: #e7f0fc;
+  border: 1px solid #31455f;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.sx-command-history-filters input::placeholder,
+.sx-command-audit-filters input::placeholder {
+  color: #8297b0;
+}
+
+.sx-command-history-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 0 16px;
+  color: #9fb5cc;
+  font-size: 11px;
+  border-bottom: 1px solid #293c54;
+}
+
+.sx-command-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.sx-command-history-item {
+  border: 1px solid #30445d;
+  border-radius: 11px;
+  background: rgba(15, 27, 44, 0.65);
+  overflow: hidden;
+}
+
+.sx-command-history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.sx-command-history-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+}
+
+.sx-command-history-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sx-command-origin {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+  color: #beaafd;
+  background: rgba(149, 120, 231, 0.12);
+  border: 1px solid rgba(149, 120, 231, 0.2);
+  border-radius: 7px;
+  padding: 5px 9px;
+}
+
+.sx-command-history-main > strong {
+  color: #eff5ff;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.sx-command-history-main > span:last-child {
+  color: #829bb8;
+  font-size: 11px;
+}
+
+.sx-command-details-button {
+  flex-shrink: 0;
+  padding: 9px 13px;
+  color: #a5e7e4;
+  background: #192f43;
+  border: 1px solid #32586b;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sx-command-details-button:hover {
+  background: #254257;
+}
+
+.sx-command-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px;
+  border-top: 1px solid #2e4259;
+  background: rgba(7, 17, 30, 0.45);
+}
+
+.sx-command-details > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.sx-command-details span {
+  color: #819ab7;
+  font-size: 11px;
+}
+
+.sx-command-details strong {
+  color: #dceafa;
+  font-size: 12px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.sx-command-load-more {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  background: rgba(40, 69, 94, 0.55);
+  color: #c5e3ed;
+  border: 1px solid #34526c;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sx-command-load-more:hover {
+  background: rgba(51, 91, 119, 0.75);
+}
+
+.sx-command-audit-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.sx-command-audit-note {
+  margin: 15px 0 0;
+  color: #7c93ae;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.sx-command-activity-marker.success {
+  background: #56d5a2;
+}
+
+.sx-command-activity-marker.warning {
+  background: #e7ba76;
+}
+
+.sx-command-activity-marker.danger {
+  background: #ee7d91;
+}
+
+.sx-command-activity-marker.unknown {
+  background: #80bad0;
+}
+
+.sx-command-history-open:focus-visible,
+.sx-command-history-close:focus-visible,
+.sx-command-details-button:focus-visible,
+.sx-command-load-more:focus-visible,
+.sx-command-history-filters input:focus-visible,
+.sx-command-history-filters select:focus-visible,
+.sx-command-audit-filters input:focus-visible,
+.sx-command-audit-filters select:focus-visible {
+  outline: 2px solid #77dfdb;
+  outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+  .sx-command-history-filters {
+    grid-template-columns: minmax(0, 1fr) 1fr;
+  }
+
+  .sx-command-history-filters input {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .sx-command-details {
+    grid-template-columns: 1fr;
+  }
+
+  .sx-command-history-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .sx-command-history-filters input {
+    grid-column: auto;
+  }
+
+  .sx-command-history-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sx-command-details-button {
+    align-self: flex-start;
+  }
+
+  .sx-command-history-container {
+    margin-top: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx-command-undo-button {
+    transition: none;
+  }
+}

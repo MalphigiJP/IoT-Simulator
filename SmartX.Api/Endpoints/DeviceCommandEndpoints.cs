@@ -1,3 +1,4 @@
+
 using Microsoft.EntityFrameworkCore;
 
 using SmartX.Api.Data;
@@ -22,29 +23,23 @@ public static class DeviceCommandEndpoints
                 int sensorId,
                 SmartXContext db,
                 DeviceCommandService commands,
-                CancellationToken cancellationToken) =>
+                CancellationToken ct) =>
             {
                 var sensor = await db.Sensors
                     .AsNoTracking()
                     .FirstOrDefaultAsync(
-                        s => s.Id == sensorId,
-                        cancellationToken
-                    );
+                        s => s.Id == sensorId, ct);
 
                 if (sensor is null)
-                {
                     return Results.NotFound(new
                     {
                         error = "Sensor not found."
                     });
-                }
-
-                var state = commands.GetOrInitialize(
-                    sensor
-                );
 
                 return Results.Ok(
-                    ToControlResponse(state)
+                    ToControlResponse(
+                        commands.GetOrInitialize(sensor)
+                    )
                 );
             }
         );
@@ -56,31 +51,16 @@ public static class DeviceCommandEndpoints
                 CreateDeviceCommandDto request,
                 SmartXContext db,
                 DeviceCommandService commands,
-                CancellationToken cancellationToken) =>
+                CancellationToken ct) =>
             {
                 if (request.State is null)
-                {
                     return Results.BadRequest(new
                     {
-                        error =
-                            "The state field is required. " +
-                            "Use true or false."
+                        error = "State must be true or false."
                     });
-                }
 
-                // Accept enum names, not numeric values.
-                bool validTarget =
-                    !string.IsNullOrWhiteSpace(
-                        request.Target
-                    ) &&
-                    Enum.GetNames<DeviceControlTarget>()
-                        .Any(name => string.Equals(
-                            name,
-                            request.Target.Trim(),
-                            StringComparison.OrdinalIgnoreCase
-                        ));
-
-                if (!validTarget)
+                if (!TryParseTarget(
+                        request.Target, out var target))
                 {
                     return Results.BadRequest(new
                     {
@@ -89,74 +69,51 @@ public static class DeviceCommandEndpoints
                     });
                 }
 
-                Enum.TryParse<DeviceControlTarget>(
-                    request.Target!.Trim(),
-                    true,
-                    out var target
-                );
-
                 var sensor = await db.Sensors
                     .AsNoTracking()
                     .FirstOrDefaultAsync(
-                        s => s.Id == sensorId,
-                        cancellationToken
-                    );
+                        s => s.Id == sensorId, ct);
 
                 if (sensor is null)
-                {
                     return Results.NotFound(new
                     {
                         error = "Sensor not found."
                     });
-                }
 
                 var result = commands.Submit(
-                    sensor,
-                    target,
-                    request.State.Value
-                );
+                    sensor, target, request.State.Value);
 
-                if (result.Outcome ==
-                    CommandCreateOutcome.ReadOnlyDevice)
+                return result.Outcome switch
                 {
-                    return Results.BadRequest(new
-                    {
-                        error =
-                            "This sensor does not support manual control."
-                    });
-                }
+                    CommandCreateOutcome.ReadOnlyDevice =>
+                        Results.BadRequest(new
+                        {
+                            error =
+                                "This device is read-only."
+                        }),
 
-                if (result.Outcome ==
-                    CommandCreateOutcome.TargetMismatch)
-                {
-                    return Results.BadRequest(new
-                    {
-                        error =
-                            "The requested control target " +
-                            "is not supported by this device.",
+                    CommandCreateOutcome.TargetMismatch =>
+                        Results.BadRequest(new
+                        {
+                            error =
+                                "Unsupported control target.",
+                            supportedTarget =
+                                result.State.SupportedTarget
+                                    ?.ToString()
+                        }),
 
-                        supportedTarget =
-                            result.State.SupportedTarget?.ToString()
-                    });
-                }
+                    CommandCreateOutcome.DeviceBusy =>
+                        Results.Conflict(new
+                        {
+                            error =
+                                "Device has an outstanding command."
+                        }),
 
-                if (result.Outcome ==
-                    CommandCreateOutcome.DeviceBusy)
-                {
-                    return Results.Conflict(new
-                    {
-                        error =
-                            "This device already has an " +
-                            "outstanding command."
-                    });
-                }
-
-                var command = result.Command!;
-
-                return Results.Created(
-                    $"/api/commands/{command.Id}",
-                    ToCommandResponse(command)
-                );
+                    _ => Results.Created(
+                        $"/api/commands/{result.Command!.Id}",
+                        ToCommandResponse(result.Command)
+                    )
+                };
             }
         );
 
@@ -166,36 +123,205 @@ public static class DeviceCommandEndpoints
                 int sensorId,
                 SmartXContext db,
                 DeviceCommandService commands,
-                CancellationToken cancellationToken) =>
+                CancellationToken ct) =>
             {
                 bool exists = await db.Sensors
                     .AnyAsync(
-                        s => s.Id == sensorId,
-                        cancellationToken
-                    );
+                        s => s.Id == sensorId, ct);
 
                 if (!exists)
-                {
                     return Results.NotFound(new
                     {
                         error = "Sensor not found."
                     });
-                }
 
-                var history = commands
-                    .GetCommands(sensorId)
-                    .Select(ToCommandResponse)
-                    .ToArray();
-
-                return Results.Ok(history);
+                return Results.Ok(
+                    commands.GetCommands(sensorId)
+                        .Select(ToCommandResponse)
+                        .ToArray()
+                );
             }
         );
 
-        var commandRoutes = app
-            .MapGroup("/api/commands")
-            .WithTags("Device Commands");
+        devices.MapGet(
+            "/{sensorId:int}/commands/pending",
+            async (
+                int sensorId,
+                SmartXContext db,
+                DeviceCommandService commands,
+                CancellationToken ct) =>
+            {
+                var sensor = await db.Sensors
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        s => s.Id == sensorId, ct);
 
-        // GET ONE COMMAND BY ID
+                if (sensor is null)
+                    return Results.NotFound(new
+                    {
+                        error = "Sensor not found."
+                    });
+
+                commands.GetOrInitialize(sensor);
+
+                var command = commands.ClaimNextForDevice(
+                    sensorId,
+                    DateTime.UtcNow
+                );
+
+                if (command is null)
+                    return Results.NoContent();
+
+                return Results.Ok(
+                    ToCommandResponse(command)
+                );
+            }
+        );
+
+        devices.MapPost(
+            "/{sensorId:int}/commands/{commandId:guid}/ack",
+            async (
+                int sensorId,
+                Guid commandId,
+                DeviceCommandAcknowledgementDto request,
+                SmartXContext db,
+                DeviceCommandService commands,
+                CancellationToken ct) =>
+            {
+                if (request.CommandId != commandId)
+                    return Results.BadRequest(new
+                    {
+                        error =
+                            "Body commandId must match the URL."
+                    });
+
+                var sensor = await db.Sensors
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        s => s.Id == sensorId, ct);
+
+                if (sensor is null)
+                    return Results.NotFound(new
+                    {
+                        error = "Sensor not found."
+                    });
+
+                commands.GetOrInitialize(sensor);
+
+                var result = commands.Acknowledge(
+                    sensorId,
+                    commandId,
+                    request.Applied,
+                    request.ReportedState,
+                    request.Error
+                );
+
+                return result.Outcome switch
+                {
+                    CommandAckOutcome.NotFound =>
+                        Results.NotFound(new
+                        {
+                            error = "Command not found."
+                        }),
+
+                    CommandAckOutcome.InvalidStatus =>
+                        Results.Conflict(new
+                        {
+                            error =
+                                "Command is not awaiting acknowledgement."
+                        }),
+
+                    CommandAckOutcome.InvalidReportedState =>
+                        Results.BadRequest(new
+                        {
+                            error =
+                                "Successful acknowledgement must " +
+                                "confirm the requested state."
+                        }),
+
+                    _ => Results.Ok(new
+                    {
+                        command =
+                            ToCommandResponse(result.Command!),
+
+                        control =
+                            ToControlResponse(result.State!),
+
+                        alreadyAcknowledged =
+                            result.Outcome ==
+                            CommandAckOutcome.AlreadyAcknowledged
+                    })
+                };
+            }
+        );
+
+        devices.MapPost(
+            "/{sensorId:int}/control/report",
+            async (
+                int sensorId,
+                DeviceControlReportDto request,
+                SmartXContext db,
+                DeviceCommandService commands,
+                CancellationToken ct) =>
+            {
+                if (request.State is null ||
+                    !TryParseTarget(
+                        request.Target, out var target))
+                {
+                    return Results.BadRequest(new
+                    {
+                        error =
+                            "A valid target and Boolean state are required."
+                    });
+                }
+
+                var sensor = await db.Sensors
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        s => s.Id == sensorId, ct);
+
+                if (sensor is null)
+                    return Results.NotFound(new
+                    {
+                        error = "Sensor not found."
+                    });
+
+                var result = commands.ReportState(
+                    sensor,
+                    target,
+                    request.State.Value
+                );
+
+                if (result.Outcome ==
+                    ControlReportOutcome.ReadOnlyDevice)
+                {
+                    return Results.BadRequest(new
+                    {
+                        error =
+                            "Read-only device cannot report control state."
+                    });
+                }
+
+                if (result.Outcome ==
+                    ControlReportOutcome.TargetMismatch)
+                {
+                    return Results.BadRequest(new
+                    {
+                        error =
+                            "Control target does not match the device."
+                    });
+                }
+
+                return Results.Ok(
+                    ToControlResponse(result.State)
+                );
+            }
+        );
+
+        var commandRoutes = app.MapGroup(
+            "/api/commands"
+        ).WithTags("Device Commands");
+
         commandRoutes.MapGet(
             "/{commandId:guid}",
             (
@@ -203,8 +329,7 @@ public static class DeviceCommandEndpoints
                 DeviceCommandService commands) =>
             {
                 if (!commands.TryGetCommand(
-                        commandId,
-                        out var command))
+                        commandId, out var command))
                 {
                     return Results.NotFound(new
                     {
@@ -218,16 +343,13 @@ public static class DeviceCommandEndpoints
             }
         );
 
-        // CANCEL A COMMAND BEFORE DELIVERY
         commandRoutes.MapPost(
             "/{commandId:guid}/cancel",
             (
                 Guid commandId,
                 DeviceCommandService commands) =>
             {
-                var result = commands.Cancel(
-                    commandId
-                );
+                var result = commands.Cancel(commandId);
 
                 if (result.Outcome ==
                     CommandCancelOutcome.NotFound)
@@ -257,6 +379,33 @@ public static class DeviceCommandEndpoints
         return app;
     }
 
+    private static bool TryParseTarget(
+        string? value,
+        out DeviceControlTarget target)
+    {
+        target = default;
+
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        string name = value.Trim();
+
+        foreach (var possible in
+            Enum.GetValues<DeviceControlTarget>())
+        {
+            if (string.Equals(
+                possible.ToString(),
+                name,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                target = possible;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private static object ToCommandResponse(
         DeviceCommand command)
     {
@@ -264,23 +413,16 @@ public static class DeviceCommandEndpoints
         {
             commandId = command.Id,
             sensorId = command.SensorId,
-
             target = command.Target.ToString(),
             requestedState = command.RequestedState,
             previousDesiredState =
                 command.PreviousDesiredState,
-
             origin = command.Origin.ToString(),
-
             status = command.Status.ToString(),
-
-            undoOfCommandId =
-                command.UndoOfCommandId,
-
+            undoOfCommandId = command.UndoOfCommandId,
             createdAtUtc = command.CreatedAtUtc,
             deliveredAtUtc = command.DeliveredAtUtc,
             completedAtUtc = command.CompletedAtUtc,
-
             failureReason = command.FailureReason
         };
     }
@@ -293,21 +435,15 @@ public static class DeviceCommandEndpoints
             sensorId = state.SensorId,
             macAddress = state.MacAddress,
             category = state.Category,
-
             supportedTarget =
                 state.SupportedTarget?.ToString(),
-
             desiredState = state.DesiredState,
             reportedState = state.ReportedState,
-
             lastCommandId = state.LastCommandId,
-
             lastDesiredChangeAtUtc =
                 state.LastDesiredChangeAtUtc,
-
             lastReportedAtUtc =
                 state.LastReportedAtUtc,
-
             revision = state.Revision
         };
     }

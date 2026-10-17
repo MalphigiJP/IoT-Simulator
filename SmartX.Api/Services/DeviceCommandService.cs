@@ -29,20 +29,49 @@ public sealed record CommandCancellationResult(
     DeviceCommand? Command
 );
 
+public enum CommandAckOutcome
+{
+    Applied,
+    Failed,
+    AlreadyAcknowledged,
+    NotFound,
+    InvalidStatus,
+    InvalidReportedState
+}
+
+public sealed record CommandAckResult(
+    CommandAckOutcome Outcome,
+    DeviceCommand? Command,
+    DeviceControlState? State
+);
+
+public enum ControlReportOutcome
+{
+    Updated,
+    ReadOnlyDevice,
+    TargetMismatch
+}
+
+public sealed record ControlReportResult(
+    ControlReportOutcome Outcome,
+    DeviceControlState State
+);
 
 public sealed class DeviceCommandService
 {
     private readonly object _sync = new();
 
-    // Latest desired and reported state for each device.
+    // Unacknowledged deliveries can be reclaimed
+    // if the original response was lost.
+    public static readonly TimeSpan DeliveryLease =
+        TimeSpan.FromSeconds(15);
+
     private readonly Dictionary<int, DeviceControlState>
         _states = new();
 
-    // Command lookup by command ID.
     private readonly Dictionary<Guid, DeviceCommand>
         _commands = new();
 
-    // Command IDs in creation order for each sensor.
     private readonly Dictionary<int, List<Guid>>
         _commandsBySensor = new();
 
@@ -68,33 +97,27 @@ public sealed class DeviceCommandService
         {
             var state = GetOrInitializeLocked(sensor);
 
-            // Read-only and unknown device types
-            // cannot receive manual commands.
             if (state.SupportedTarget is null)
             {
-                return new CommandCreationResult(
+                return new(
                     CommandCreateOutcome.ReadOnlyDevice,
                     null,
                     state
                 );
             }
 
-            // A smart plug cannot execute a pump
-            // command, for example.
             if (state.SupportedTarget != target)
             {
-                return new CommandCreationResult(
+                return new(
                     CommandCreateOutcome.TargetMismatch,
                     null,
                     state
                 );
             }
 
-            // Only one outstanding command
-            // per device is permitted.
             if (HasOutstandingCommandLocked(sensor.Id))
             {
-                return new CommandCreationResult(
+                return new(
                     CommandCreateOutcome.DeviceBusy,
                     null,
                     state
@@ -106,19 +129,12 @@ public sealed class DeviceCommandService
             var command = new DeviceCommand
             {
                 Id = Guid.NewGuid(),
-
                 SensorId = sensor.Id,
-
                 Target = target,
-
                 RequestedState = requestedState,
-
                 PreviousDesiredState = state.DesiredState,
-
                 Origin = DeviceCommandOrigin.Manual,
-
                 Status = DeviceCommandStatus.Pending,
-
                 CreatedAtUtc = now
             };
 
@@ -126,39 +142,286 @@ public sealed class DeviceCommandService
 
             if (!_commandsBySensor.TryGetValue(
                     sensor.Id,
-                    out var commandIds))
+                    out var ids))
             {
-                commandIds = new List<Guid>();
+                ids = new List<Guid>();
+                _commandsBySensor.Add(sensor.Id, ids);
+            }
 
-                _commandsBySensor.Add(
-                    sensor.Id,
-                    commandIds
+            ids.Add(command.Id);
+
+            var updated = state with
+            {
+                DesiredState = requestedState,
+                LastCommandId = command.Id,
+                LastDesiredChangeAtUtc = now,
+                Revision = state.Revision + 1
+            };
+
+            _states[sensor.Id] = updated;
+
+            return new(
+                CommandCreateOutcome.Created,
+                command,
+                updated
+            );
+        }
+    }
+
+    public DeviceCommand? ClaimNextForDevice(
+        int sensorId,
+        DateTime nowUtc)
+    {
+        lock (_sync)
+        {
+            if (!_commandsBySensor.TryGetValue(
+                    sensorId,
+                    out var ids))
+            {
+                return null;
+            }
+
+            foreach (Guid id in ids)
+            {
+                var command = _commands[id];
+
+                bool pending =
+                    command.Status ==
+                    DeviceCommandStatus.Pending;
+
+                bool leaseExpired =
+                    command.Status ==
+                    DeviceCommandStatus.Delivered &&
+                    (
+                        command.DeliveredAtUtc is null ||
+                        nowUtc - command.DeliveredAtUtc.Value
+                            >= DeliveryLease
+                    );
+
+                if (!pending && !leaseExpired)
+                {
+                    continue;
+                }
+
+                var delivered = command with
+                {
+                    Status = DeviceCommandStatus.Delivered,
+                    DeliveredAtUtc = nowUtc
+                };
+
+                _commands[id] = delivered;
+
+                return delivered;
+            }
+
+            return null;
+        }
+    }
+
+    public CommandAckResult Acknowledge(
+        int sensorId,
+        Guid commandId,
+        bool applied,
+        bool? reportedState,
+        string? error)
+    {
+        lock (_sync)
+        {
+            if (!_commands.TryGetValue(
+                    commandId,
+                    out var command) ||
+                command.SensorId != sensorId)
+            {
+                return new(
+                    CommandAckOutcome.NotFound,
+                    null,
+                    null
                 );
             }
 
-            commandIds.Add(command.Id);
+            _states.TryGetValue(
+                sensorId,
+                out var state
+            );
 
-            // Update DESIRED state only.
-            //
-            // The device has not confirmed that
-            // it executed the command.
-            var updatedState = state with
+            // A previously successful acknowledgement
+            // may be repeated after a lost HTTP reply.
+            if (command.Status ==
+                    DeviceCommandStatus.Applied &&
+                applied &&
+                reportedState == command.RequestedState)
             {
-                DesiredState = requestedState,
+                return new(
+                    CommandAckOutcome.AlreadyAcknowledged,
+                    command,
+                    state
+                );
+            }
 
-                LastCommandId = command.Id,
+            if (command.Status ==
+                    DeviceCommandStatus.Failed &&
+                !applied)
+            {
+                return new(
+                    CommandAckOutcome.AlreadyAcknowledged,
+                    command,
+                    state
+                );
+            }
 
-                LastDesiredChangeAtUtc = now,
+            // A device may only acknowledge a command
+            // that the server actually delivered.
+            if (command.Status !=
+                DeviceCommandStatus.Delivered)
+            {
+                return new(
+                    CommandAckOutcome.InvalidStatus,
+                    command,
+                    state
+                );
+            }
+
+            if (state is null)
+            {
+                return new(
+                    CommandAckOutcome.InvalidStatus,
+                    command,
+                    null
+                );
+            }
+
+            // A successful execution must confirm
+            // the exact state the operator requested.
+            if (applied &&
+                reportedState != command.RequestedState)
+            {
+                return new(
+                    CommandAckOutcome.InvalidReportedState,
+                    command,
+                    state
+                );
+            }
+
+            DateTime now = DateTime.UtcNow;
+
+            var completed = command with
+            {
+                Status = applied
+                    ? DeviceCommandStatus.Applied
+                    : DeviceCommandStatus.Failed,
+
+                CompletedAtUtc = now,
+
+                FailureReason = applied
+                    ? null
+                    : string.IsNullOrWhiteSpace(error)
+                        ? "Device could not apply command."
+                        : error.Trim()
+            };
+
+            _commands[commandId] = completed;
+
+            var updated = state with
+            {
+
+                DesiredState = applied
+                    ? command.RequestedState
+                    : command.PreviousDesiredState
+                        ?? reportedState
+                        ?? state.ReportedState,
+
+                ReportedState =
+                    reportedState ?? state.ReportedState,
+
+                LastCommandId = commandId,
+
+                LastReportedAtUtc =
+                    reportedState.HasValue
+                        ? now
+                        : state.LastReportedAtUtc,
+
+                LastDesiredChangeAtUtc =
+                    applied
+                        ? state.LastDesiredChangeAtUtc
+                        : now,
 
                 Revision = state.Revision + 1
             };
 
-            _states[sensor.Id] = updatedState;
+            _states[sensorId] = updated;
 
-            return new CommandCreationResult(
-                CommandCreateOutcome.Created,
-                command,
-                updatedState
+            return new(
+                applied
+                    ? CommandAckOutcome.Applied
+                    : CommandAckOutcome.Failed,
+                completed,
+                updated
+            );
+        }
+    }
+
+    public ControlReportResult ReportState(
+        Sensor sensor,
+        DeviceControlTarget target,
+        bool reportedState)
+    {
+        ArgumentNullException.ThrowIfNull(sensor);
+
+        lock (_sync)
+        {
+            var state = GetOrInitializeLocked(sensor);
+
+            if (state.SupportedTarget is null)
+            {
+                return new(
+                    ControlReportOutcome.ReadOnlyDevice,
+                    state
+                );
+            }
+
+            if (state.SupportedTarget != target)
+            {
+                return new(
+                    ControlReportOutcome.TargetMismatch,
+                    state
+                );
+            }
+
+            bool outstanding =
+                HasOutstandingCommandLocked(sensor.Id);
+
+            bool? desired = outstanding
+                ? state.DesiredState
+                : reportedState;
+
+            bool changed =
+                state.ReportedState != reportedState ||
+                state.DesiredState != desired;
+
+            DateTime now = DateTime.UtcNow;
+
+            var updated = state with
+            {
+                ReportedState = reportedState,
+                DesiredState = desired,
+
+                LastReportedAtUtc = now,
+
+                LastDesiredChangeAtUtc =
+                    state.DesiredState != desired
+                        ? now
+                        : state.LastDesiredChangeAtUtc,
+
+                Revision = changed
+                    ? state.Revision + 1
+                    : state.Revision
+            };
+
+            _states[sensor.Id] = updated;
+
+            return new(
+                ControlReportOutcome.Updated,
+                updated
             );
         }
     }
@@ -183,13 +446,12 @@ public sealed class DeviceCommandService
         {
             if (!_commandsBySensor.TryGetValue(
                     sensorId,
-                    out var commandIds))
+                    out var ids))
             {
                 return Array.Empty<DeviceCommand>();
             }
 
-            // Newest command first.
-            return commandIds
+            return ids
                 .AsEnumerable()
                 .Reverse()
                 .Select(id => _commands[id])
@@ -206,18 +468,16 @@ public sealed class DeviceCommandService
                     commandId,
                     out var command))
             {
-                return new CommandCancellationResult(
+                return new(
                     CommandCancelOutcome.NotFound,
                     null
                 );
             }
 
-            // Only commands that have not reached
-            // the device can be cancelled safely.
             if (command.Status !=
                 DeviceCommandStatus.Pending)
             {
-                return new CommandCancellationResult(
+                return new(
                     CommandCancelOutcome.NotPending,
                     command
                 );
@@ -233,8 +493,6 @@ public sealed class DeviceCommandService
 
             _commands[commandId] = cancelled;
 
-            // Cancellation restores the previous
-            // desired state, not the reported state.
             if (_states.TryGetValue(
                     command.SensorId,
                     out var state))
@@ -245,14 +503,12 @@ public sealed class DeviceCommandService
                         command.PreviousDesiredState,
 
                     LastCommandId = commandId,
-
                     LastDesiredChangeAtUtc = now,
-
                     Revision = state.Revision + 1
                 };
             }
 
-            return new CommandCancellationResult(
+            return new(
                 CommandCancelOutcome.Cancelled,
                 cancelled
             );
@@ -267,9 +523,9 @@ public sealed class DeviceCommandService
 
             if (_commandsBySensor.Remove(
                     sensorId,
-                    out var commandIds))
+                    out var ids))
             {
-                foreach (Guid id in commandIds)
+                foreach (Guid id in ids)
                 {
                     _commands.Remove(id);
                 }
@@ -282,19 +538,16 @@ public sealed class DeviceCommandService
     {
         if (!_commandsBySensor.TryGetValue(
                 sensorId,
-                out var commandIds))
+                out var ids))
         {
             return false;
         }
 
-        return commandIds.Any(id =>
-        {
-            var status = _commands[id].Status;
-
-            return status is
+        return ids.Any(id =>
+            _commands[id].Status is
                 DeviceCommandStatus.Pending or
-                DeviceCommandStatus.Delivered;
-        });
+                DeviceCommandStatus.Delivered
+        );
     }
 
     private DeviceControlState GetOrInitializeLocked(
@@ -304,7 +557,7 @@ public sealed class DeviceCommandService
         {
             throw new ArgumentOutOfRangeException(
                 nameof(sensor),
-                "The sensor must be registered."
+                "Sensor must be registered."
             );
         }
 
@@ -322,7 +575,7 @@ public sealed class DeviceCommandService
             return initial;
         }
 
-        var currentTarget =
+        var target =
             DeviceControlCatalog.GetSupportedTarget(
                 sensor.Category
             );
@@ -334,16 +587,12 @@ public sealed class DeviceCommandService
         );
 
         bool capabilityChanged =
-            existing.SupportedTarget != currentTarget;
+            existing.SupportedTarget != target;
 
-        // A different MAC or device capability
-        // represents a new control identity.
         if (macChanged || capabilityChanged)
         {
             DateTime now = DateTime.UtcNow;
 
-            // Cancel undelivered commands referencing
-            // the old device identity.
             if (_commandsBySensor.TryGetValue(
                     sensor.Id,
                     out var ids))
@@ -363,7 +612,24 @@ public sealed class DeviceCommandService
                             CompletedAtUtc = now,
 
                             FailureReason =
-                                "Device identity or capability changed."
+                                "Device identity changed."
+                        };
+                    }
+                    else if (command.Status ==
+                        DeviceCommandStatus.Delivered)
+                    {
+                        // Already delivered: execution
+                        // cannot be ruled out.
+                        _commands[id] = command with
+                        {
+                            Status =
+                                DeviceCommandStatus.Failed,
+
+                            CompletedAtUtc = now,
+
+                            FailureReason =
+                                "Device identity changed while " +
+                                "execution was unconfirmed."
                         };
                     }
                 }
@@ -382,8 +648,6 @@ public sealed class DeviceCommandService
             return reset;
         }
 
-        // Metadata may be updated without
-        // losing the command state.
         var refreshed = existing with
         {
             MacAddress = sensor.MacAddress,

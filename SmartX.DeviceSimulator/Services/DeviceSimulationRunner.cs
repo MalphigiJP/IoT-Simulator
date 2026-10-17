@@ -1,3 +1,4 @@
+
 using SmartX.DeviceSimulator.Models;
 
 namespace SmartX.DeviceSimulator.Services;
@@ -10,9 +11,10 @@ public sealed class DeviceSimulationRunner
     private readonly SimulationStatistics _statistics;
     private readonly SimulationSettings _settings;
     private readonly FaultInjectionEngine _faultEngine;
-
     private readonly TimeSpan _interval;
     private readonly int _maxReadings;
+
+    private bool? _lastReportedControlState;
 
     public DeviceSimulationRunner(
         SimulatedDevice device,
@@ -33,8 +35,135 @@ public sealed class DeviceSimulationRunner
             device.Profile.Kind
         );
 
-        _maxReadings =
-            settings.MaxReadingsPerDevice;
+        _maxReadings = settings.MaxReadingsPerDevice;
+    }
+
+    private async Task ProcessPendingCommandAsync(
+        CancellationToken cancellationToken)
+    {
+        string? target = _device.GetControlTarget();
+
+        if (target is null)
+        {
+            return;
+        }
+
+        var command = await _api.PollCommandAsync(
+            _sensorId,
+            cancellationToken
+        );
+
+        if (command is null)
+        {
+            return;
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(
+            $"[COMMAND RECEIVED] {_device.Profile.Name}"
+        );
+
+        Console.WriteLine(
+            $"  Command: {command.CommandId}"
+        );
+
+        Console.WriteLine(
+            $"  Target: {command.Target}"
+        );
+
+        Console.WriteLine(
+            $"  Requested state: {command.RequestedState}"
+        );
+
+        bool applied = _device.TryApplyControl(
+            command.Target,
+            command.RequestedState,
+            out string? error
+        );
+
+        bool? currentState =
+            _device.GetCurrentControlState();
+
+        await _api.AcknowledgeCommandAsync(
+            _sensorId,
+            command.CommandId,
+            applied,
+            currentState,
+            error,
+            cancellationToken
+        );
+
+        if (currentState.HasValue)
+        {
+            _lastReportedControlState =
+                currentState.Value;
+        }
+
+        if (applied)
+        {
+            Console.ForegroundColor =
+                ConsoleColor.Green;
+
+            Console.WriteLine(
+                $"[COMMAND APPLIED] " +
+                $"{_device.Profile.Name} | " +
+                $"{command.Target} = " +
+                $"{currentState}"
+            );
+
+            Console.ResetColor();
+        }
+        else
+        {
+            Console.ForegroundColor =
+                ConsoleColor.Yellow;
+
+            Console.WriteLine(
+                $"[COMMAND FAILED] " +
+                $"{_device.Profile.Name} | " +
+                error
+            );
+
+            Console.ResetColor();
+        }
+    }
+
+    private async Task ReportStateIfChangedAsync(
+        CancellationToken cancellationToken)
+    {
+        string? target = _device.GetControlTarget();
+
+        bool? currentState =
+            _device.GetCurrentControlState();
+
+        if (target is null ||
+            currentState is null)
+        {
+            return;
+        }
+
+        // Avoid sending duplicate state reports.
+        if (_lastReportedControlState ==
+            currentState.Value)
+        {
+            return;
+        }
+
+        await _api.ReportControlStateAsync(
+            _sensorId,
+            target,
+            currentState.Value,
+            cancellationToken
+        );
+
+        _lastReportedControlState =
+            currentState.Value;
+
+        Console.WriteLine(
+            $"[STATE REPORTED] " +
+            $"{_device.Profile.Name} | " +
+            $"{target} = {currentState.Value}"
+        );
     }
 
     public async Task RunAsync(
@@ -42,7 +171,6 @@ public sealed class DeviceSimulationRunner
     {
         int readingsAttempted = 0;
 
-        // An outage occurs once per simulation run.
         bool outageTriggered = false;
 
         using var timer = new PeriodicTimer(
@@ -54,6 +182,27 @@ public sealed class DeviceSimulationRunner
             $"Sensor {_sensorId} | " +
             $"Interval {_interval.TotalMilliseconds:0} ms"
         );
+
+        try
+        {
+            await ReportStateIfChangedAsync(
+                cancellationToken
+            );
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            _statistics.RecordError();
+
+            Console.WriteLine(
+                $"[INITIAL STATE ERROR] " +
+                $"{_device.Profile.Name} | {ex.Message}"
+            );
+        }
 
         while (
             !cancellationToken.IsCancellationRequested &&
@@ -78,19 +227,10 @@ public sealed class DeviceSimulationRunner
 
                 _statistics.RecordOutageStarted();
 
-                Console.WriteLine();
                 Console.WriteLine(
                     $"[DEVICE OFFLINE] {_device.Profile.Name}"
                 );
 
-                Console.WriteLine(
-                    $"  Pausing HTTP transmission for " +
-                    $"{_settings.OutageSeconds} seconds."
-                );
-
-                // No requests are sent by this device
-                // during the outage. Other devices
-                // continue independently.
                 try
                 {
                     await Task.Delay(
@@ -117,16 +257,35 @@ public sealed class DeviceSimulationRunner
                     $"[DEVICE RECONNECTED] " +
                     $"{_device.Profile.Name}"
                 );
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+                break;
+
+            try
+            {
+                await ProcessPendingCommandAsync(
+                    cancellationToken
+                );
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _statistics.RecordError();
 
                 Console.WriteLine(
-                    "  Resuming HTTP transmission."
+                    $"[COMMAND ERROR] " +
+                    $"{_device.Profile.Name} | " +
+                    ex.Message
                 );
             }
 
             if (cancellationToken.IsCancellationRequested)
-            {
                 break;
-            }
 
             var normalReading = _device
                 .GenerateReading() with
@@ -136,6 +295,7 @@ public sealed class DeviceSimulationRunner
 
             readingsAttempted++;
 
+            // Retain existing Phase 3.4 faults.
             var injection = _faultEngine.Apply(
                 _device.Profile.Kind,
                 normalReading,
@@ -146,18 +306,10 @@ public sealed class DeviceSimulationRunner
             {
                 _statistics.RecordInjectedFault();
 
-                Console.WriteLine();
                 Console.WriteLine(
                     $"[FAULT INJECTED] " +
-                    $"{_device.Profile.Name}"
-                );
-
-                Console.WriteLine(
-                    $"  {injection.Description}"
-                );
-
-                Console.WriteLine(
-                    $"  Reading number: {readingsAttempted}"
+                    $"{_device.Profile.Name} | " +
+                    injection.Description
                 );
             }
 
@@ -182,8 +334,7 @@ public sealed class DeviceSimulationRunner
                 else if (sendResult.QueueFull)
                 {
                     Console.WriteLine(
-                        $"[QUEUE FULL] {_device.Profile.Name} | " +
-                        $"HTTP 429"
+                        $"[QUEUE FULL] {_device.Profile.Name}"
                     );
                 }
                 else
@@ -199,37 +350,41 @@ public sealed class DeviceSimulationRunner
             {
                 break;
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
                 _statistics.RecordError();
 
                 Console.WriteLine(
-                    $"[HTTP ERROR] {_device.Profile.Name} | " +
+                    $"[TELEMETRY ERROR] " +
+                    $"{_device.Profile.Name} | " +
                     ex.Message
                 );
             }
-            catch (TaskCanceledException)
-            {
-                _statistics.RecordError();
 
-                Console.WriteLine(
-                    $"[TIMEOUT] {_device.Profile.Name}"
+            try
+            {
+                await ReportStateIfChangedAsync(
+                    cancellationToken
                 );
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                break;
             }
             catch (Exception ex)
             {
                 _statistics.RecordError();
 
                 Console.WriteLine(
-                    $"[DEVICE ERROR] {_device.Profile.Name} | " +
+                    $"[STATE REPORT ERROR] " +
+                    $"{_device.Profile.Name} | " +
                     ex.Message
                 );
             }
 
-            if (
-                _maxReadings > 0 &&
-                readingsAttempted >= _maxReadings
-            )
+            if (_maxReadings > 0 &&
+                readingsAttempted >= _maxReadings)
             {
                 break;
             }

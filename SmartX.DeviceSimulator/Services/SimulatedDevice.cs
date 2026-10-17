@@ -11,6 +11,9 @@ public sealed class SimulatedDevice
 
     private int _readingIndex;
 
+
+    private bool? _controlOverride;
+
     public SimulatedDevice(DeviceProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
@@ -18,8 +21,85 @@ public sealed class SimulatedDevice
         Profile = profile;
 
         _random = new Random(profile.RandomSeed);
-
         _readingIndex = 0;
+    }
+
+    public string? GetControlTarget()
+    {
+        return Profile.Kind switch
+        {
+            DeviceKind.SmartPlug => "Relay",
+
+            DeviceKind.IrrigationValve => "Valve",
+
+            DeviceKind.PumpController => "Pump",
+
+            _ => null
+        };
+    }
+
+    public bool? GetCurrentControlState()
+    {
+        if (GetControlTarget() is null)
+        {
+            return null;
+        }
+
+        if (_controlOverride.HasValue)
+        {
+            return _controlOverride.Value;
+        }
+
+        // Before the first reading, describe the
+        // state that the first reading will use.
+        int index = Math.Max(0, _readingIndex - 1);
+
+        return Profile.Kind switch
+        {
+            DeviceKind.SmartPlug =>
+                index % 8 < 4,
+
+            DeviceKind.IrrigationValve =>
+                index % 6 < 3,
+
+            DeviceKind.PumpController =>
+                index % 8 < 5,
+
+            _ => null
+        };
+    }
+
+    public bool TryApplyControl(
+        string target,
+        bool state,
+        out string? error)
+    {
+        string? supported = GetControlTarget();
+
+        if (supported is null)
+        {
+            error = "Device is read-only.";
+            return false;
+        }
+
+        if (!string.Equals(
+                supported,
+                target,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            error =
+                $"Device does not support {target}. " +
+                $"Supported target: {supported}.";
+
+            return false;
+        }
+
+        // This is the actual simulated actuator
+        // state change. It persists across readings.
+        _controlOverride = state;
+
+        error = null;
+        return true;
     }
 
     public SimulatedTelemetry GenerateReading()
@@ -41,7 +121,7 @@ public sealed class SimulatedDevice
                 GeneratePump(index),
 
             _ => throw new NotSupportedException(
-                $"Unsupported device type: {Profile.Kind}"
+                $"Unsupported device kind: {Profile.Kind}"
             )
         };
 
@@ -54,8 +134,6 @@ public sealed class SimulatedDevice
     private SimulatedTelemetry GenerateEnvironmental(
         int index)
     {
-        // Gradual changes instead of completely
-        // random readings on every sample.
         double temperature =
             24.0 +
             Math.Sin(index / 4.0) * 2.0 +
@@ -81,9 +159,8 @@ public sealed class SimulatedDevice
     private SimulatedTelemetry GenerateSmartPlug(
         int index)
     {
-        // Simulate equipment that periodically
-        // switches off and resumes operation.
-        bool powered = index % 8 < 4;
+        bool powered =
+            _controlOverride ?? (index % 8 < 4);
 
         int wattage = 0;
 
@@ -106,21 +183,20 @@ public sealed class SimulatedDevice
         };
     }
 
-    // IRRIGATION VALVE CONTROLLER
+
     private SimulatedTelemetry GenerateIrrigationValve(
         int index)
     {
-        // Alternate between three open and
-        // three closed reporting cycles.
-        bool valveOpen = index % 6 < 3;
+        bool open =
+            _controlOverride ?? (index % 6 < 3);
 
-        double moisture = valveOpen
+        double moisture = open
             ? 62.0 + Noise(2.0)
             : 51.0 + Noise(2.0);
 
         return new SimulatedTelemetry
         {
-            ValveOpen = valveOpen,
+            ValveOpen = open,
 
             SoilMoisture = Round(
                 Math.Clamp(moisture, 0, 100)
@@ -131,9 +207,8 @@ public sealed class SimulatedDevice
     private SimulatedTelemetry GeneratePump(
         int index)
     {
-        // Five reporting cycles running,
-        // followed by three cycles stopped.
-        bool running = index % 8 < 5;
+        bool running =
+            _controlOverride ?? (index % 8 < 5);
 
         int wattage = running
             ? Math.Max(
@@ -144,15 +219,12 @@ public sealed class SimulatedDevice
             )
             : 0;
 
-        // ValveOpen is deliberately omitted:
-        // pump state is not the same as valve state.
         return new SimulatedTelemetry
         {
             Wattage = wattage
         };
     }
 
-    // HELPER METHODS
     private double Noise(double amplitude)
     {
         return (

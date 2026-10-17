@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartX.Api.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5b1c8b1f029e90a342e7a920709000db978f9406")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+51cf51ba2d7f7e3064f66e993697d7c20bc571f4")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartX.Api.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartX.Api.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

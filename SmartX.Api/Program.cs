@@ -51,7 +51,7 @@ builder.Services.AddSingleton<ActiveAlertService>();
 builder.Services.AddHostedService<DeviceConnectivityMonitor>();
 builder.Services.AddSingleton<TelemetryQueue>();
 builder.Services.AddHostedService<TelemetryQueueWorker>();
-
+builder.Services.AddSingleton<DeviceCommandService>();
 
 var app = builder.Build();
 
@@ -490,5 +490,6 @@ app.MapGet("/api/alerts/disconnected",
     .WithTags("Active Alerts")
     .WithName("GetDisconnectedSensorIds");
 
+app.MapDeviceCommandEndpoints();
 
 app.Run();

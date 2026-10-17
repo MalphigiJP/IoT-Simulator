@@ -9,7 +9,11 @@ import {
   getRecentCommandEvents,
   undoDeviceCommand,
   getCommandErrorMessage,
+  getLiveCommandDevices,
 } from "../api/commandApi";
+import { getConnectionStatus } from "../utils/commandConnectivity";
+import { useDeviceConnectivity } from "../hooks/useDeviceConnectivity";
+import CommandConnectivityPanel from "../components/CommandConnectivityPanel";
 import "./CommandStream.css";
 
 const PAGE_SIZE = 8;
@@ -82,15 +86,27 @@ function formatTime(value) {
 }
 
 function getTone(status) {
-  if (status === "Applied" || status === "UndoApplied") {
+  if (
+    ["Applied", "CommandApplied", "UndoApplied"].includes(status)
+  ) {
     return "success";
   }
 
-  if (status === "Pending" || status === "Delivered") {
+  if (
+    [
+      "Pending",
+      "Delivered",
+      "CommandSubmitted",
+      "CommandDelivered",
+      "UndoRequested",
+    ].includes(status)
+  ) {
     return "warning";
   }
 
-  if (status === "Failed" || status === "UndoFailed") {
+  if (
+    ["Failed", "CommandFailed", "UndoFailed"].includes(status)
+  ) {
     return "danger";
   }
 
@@ -149,11 +165,16 @@ function DeviceCard({
   busy,
   feedback,
   selected,
+  liveDevice,
+  registryError,
   onIssueCommand,
   onUndo,
   onViewHistory,
 }) {
   const type = getDeviceType(sensor.category);
+  const connection = getConnectionStatus(
+    registryError ? null : liveDevice
+  );
   const control = snapshot?.control;
   const latestCommand = snapshot?.latestCommand;
   const undo = snapshot?.undo;
@@ -168,7 +189,9 @@ function DeviceCard({
     outstanding ||
     !control ||
     control.reportedState == null ||
-    Boolean(snapshot?.error);
+    Boolean(snapshot?.error) ||
+    Boolean(registryError) ||
+    !connection.canControl;
 
   const canUndo = !unavailable && undo?.canUndo === true;
 
@@ -244,6 +267,15 @@ function DeviceCard({
         </div>
       </div>
 
+
+      <CommandConnectivityPanel
+        sensorId={sensor.id}
+        connection={connection}
+        control={control}
+        latestCommand={latestCommand}
+        connectionError={registryError}
+      />
+
       <div className="sx-command-control-section">
         <div className="sx-command-control-heading">
           <span>Manual device control</span>
@@ -287,11 +319,15 @@ function DeviceCard({
         <p className="sx-command-control-hint">
           {busy
             ? "Submitting command..."
-            : outstanding
-              ? "Waiting for device acknowledgement."
-              : control?.reportedState == null
-                ? "Waiting for a confirmed device state."
-                : "Select an action to request a state change."}
+            : registryError
+              ? "Manual controls paused. Connectivity information is unavailable."
+              : !connection.canControl
+                ? `Manual controls paused: ${connection.label.toLowerCase()}.`
+                : outstanding
+                  ? "Waiting for device acknowledgement."
+                  : control?.reportedState == null
+                    ? "Waiting for a confirmed device state."
+                    : "Select an action to request a state change."}
         </p>
 
         <div className="sx-command-undo-panel">
@@ -826,6 +862,12 @@ export default function CommandStream() {
 
   const [lastUpdated, setLastUpdated] = useState(null);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const {
+    devicesBySensor,
+    loading: connectivityLoading,
+    error: connectivityError,
+    lastChecked: connectivityLastChecked,
+  } = useDeviceConnectivity(refreshVersion);
 
   const submissionLocks = useRef(new Set());
 
@@ -1172,6 +1214,33 @@ export default function CommandStream() {
     }));
 
     try {
+      const liveDevices = await getLiveCommandDevices();
+
+      if (!Array.isArray(liveDevices)) {
+        throw new Error("The live device registry returned an invalid response.");
+      }
+
+      const liveDevice = liveDevices.find(
+        (device) =>
+          Number(device.sensorId ?? device.id) === Number(sensor.id)
+      );
+
+      const connection = getConnectionStatus(liveDevice);
+
+      if (!connection.canControl) {
+        setFeedbackBySensor((previous) => ({
+          ...previous,
+          [sensor.id]: {
+            tone: "error",
+            message:
+              `Command not submitted. Device connectivity: ${connection.label}. ` +
+              "Wait for recent telemetry before retrying.",
+            isUndo,
+          },
+        }));
+        return;
+      }
+
       const command = await execute();
 
       setSnapshots((previous) => {
@@ -1241,7 +1310,9 @@ export default function CommandStream() {
       !snapshot?.control ||
       snapshot.error ||
       snapshot.control.reportedState == null ||
-      OUTSTANDING.has(snapshot.latestCommand?.status)
+      OUTSTANDING.has(snapshot.latestCommand?.status) ||
+      Boolean(connectivityError) ||
+      !getConnectionStatus(devicesBySensor[sensor.id]).canControl
     ) {
       return;
     }
@@ -1280,7 +1351,9 @@ export default function CommandStream() {
     if (
       !undo?.canUndo ||
       snapshot?.error ||
-      OUTSTANDING.has(snapshot?.latestCommand?.status)
+      OUTSTANDING.has(snapshot?.latestCommand?.status) ||
+      Boolean(connectivityError) ||
+      !getConnectionStatus(devicesBySensor[sensor.id]).canControl
     ) {
       return;
     }
@@ -1305,13 +1378,19 @@ export default function CommandStream() {
     .map((sensor) => snapshots[sensor.id])
     .filter((item) => item?.control);
 
-  const syncedCount = visibleSnapshots.filter(
-    (item) =>
-      getSyncStatus(
-        item.control,
-        item.latestCommand
-      ).tone === "success"
-  ).length;
+  const syncedCount = visibleSensors.filter((sensor) => {
+    const snapshot = snapshots[sensor.id];
+    const connection = getConnectionStatus(
+      connectivityError ? null : devicesBySensor[sensor.id]
+    );
+
+    return (
+      connection.canControl &&
+      snapshot?.control &&
+      getSyncStatus(snapshot.control, snapshot.latestCommand).tone ===
+        "success"
+    );
+  }).length;
 
   const awaitingCount = visibleSnapshots.filter(
     (item) => OUTSTANDING.has(item.latestCommand?.status)
@@ -1324,10 +1403,32 @@ export default function CommandStream() {
       return (
         snapshot?.undo?.canUndo === true &&
         !snapshot?.error &&
-        !OUTSTANDING.has(snapshot?.latestCommand?.status)
+        !OUTSTANDING.has(snapshot?.latestCommand?.status) &&
+        !connectivityError &&
+        getConnectionStatus(devicesBySensor[sensor.id]).canControl
       );
     }
   ).length;
+
+  const connectionCounts = visibleSensors.reduce(
+    (counts, sensor) => {
+      const device = connectivityError
+        ? null
+        : devicesBySensor[sensor.id];
+
+      const connection = getConnectionStatus(device);
+      counts[connection.status] = (counts[connection.status] ?? 0) + 1;
+
+      return counts;
+    },
+    {
+      Online: 0,
+      Delayed: 0,
+      Offline: 0,
+      AwaitingTelemetry: 0,
+      Unknown: 0,
+    }
+  );
 
   return (
     <main className="sx-command-page">
@@ -1380,7 +1481,7 @@ export default function CommandStream() {
         </div>
 
         <div className="sx-command-stat">
-          <span>States match</span>
+          <span>Online and in sync</span>
           <strong>{syncedCount}</strong>
           <small>Currently visible devices</small>
         </div>
@@ -1396,6 +1497,50 @@ export default function CommandStream() {
           <strong>{undoableCount}</strong>
           <small>Currently visible devices</small>
         </div>
+      </section>
+
+      <section
+        className="sx-command-connectivity-strip"
+        aria-label="Visible device connectivity"
+      >
+        <div className="sx-command-connectivity-overview">
+          <div>
+            <h2>Connectivity overview</h2>
+            <p>Telemetry health for devices on this page</p>
+          </div>
+
+          <div className="sx-command-connectivity-counts">
+            <span className="sx-command-count-online">
+              {connectionCounts.Online} Online
+            </span>
+            <span className="sx-command-count-delayed">
+              {connectionCounts.Delayed} Delayed
+            </span>
+            <span className="sx-command-count-offline">
+              {connectionCounts.Offline} Offline
+            </span>
+            <span className="sx-command-count-unknown">
+              {connectionCounts.AwaitingTelemetry + connectionCounts.Unknown}{" "}
+              Unconfirmed
+            </span>
+          </div>
+        </div>
+
+        <div className="sx-command-connectivity-timestamp">
+          {connectivityLoading
+            ? "Checking device connectivity..."
+            : connectivityError
+              ? "Connectivity registry unavailable"
+              : connectivityLastChecked
+                ? `Last checked: ${connectivityLastChecked.toLocaleTimeString()}`
+                : "Waiting for connectivity information"}
+        </div>
+
+        {connectivityError && (
+          <div className="sx-command-inline-error" role="alert">
+            {connectivityError}
+          </div>
+        )}
       </section>
 
       <div className="sx-command-layout">
@@ -1468,6 +1613,8 @@ export default function CommandStream() {
                     onIssueCommand={handleIssueCommand}
                     onUndo={handleUndo}
                     onViewHistory={setSelectedSensorId}
+                    liveDevice={devicesBySensor[sensor.id]}
+                    registryError={connectivityError}
                   />
                 ))}
               </div>

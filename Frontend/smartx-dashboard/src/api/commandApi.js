@@ -161,4 +161,29 @@ export function getCommandErrorMessage(error) {
   );
 }
 
+
+export async function getLiveCommandDevices(signal) {
+  const response = await commandClient.get(
+    "/devices/live",
+    { signal }
+  );
+
+  const data = response.data;
+
+  const devices = Array.isArray(data)
+    ? data
+    : data?.devices ??
+      data?.items ??
+      data?.data;
+
+  if (!Array.isArray(devices)) {
+    throw new Error(
+      "Unexpected response from the live device registry."
+    );
+  }
+
+  return devices;
+}
+
+
 export default commandClient;

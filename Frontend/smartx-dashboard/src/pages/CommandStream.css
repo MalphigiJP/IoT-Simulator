@@ -1092,3 +1092,289 @@
     transition: none;
   }
 }
+
+
+
+.sx-command-connectivity-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1600px;
+  margin: 0 auto 22px;
+  padding: 16px 20px;
+  border: 1px solid #2d445c;
+  border-radius: 13px;
+  background: rgba(18, 33, 52, 0.92);
+}
+
+.sx-command-connectivity-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sx-command-connectivity-overview h2 {
+  color: #eaf3ff;
+  margin: 0 0 5px;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.sx-command-connectivity-overview p {
+  color: #92a8c2;
+  font-size: 11px;
+  margin: 0;
+}
+
+.sx-command-connectivity-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sx-command-connectivity-counts > span {
+  padding: 8px 11px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sx-command-count-online {
+  color: #80e6b9;
+  background: rgba(61, 183, 127, 0.12);
+}
+
+.sx-command-count-delayed {
+  color: #f6d08f;
+  background: rgba(222, 162, 67, 0.12);
+}
+
+.sx-command-count-offline {
+  color: #ffacba;
+  background: rgba(226, 84, 111, 0.14);
+}
+
+.sx-command-count-unknown {
+  color: #b5c4d7;
+  background: rgba(131, 155, 182, 0.12);
+}
+
+.sx-command-connectivity-timestamp {
+  color: #809ab7;
+  font-size: 10px;
+}
+
+.sx-command-connectivity-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(8, 19, 33, 0.52);
+  border: 1px solid #30445c;
+  border-radius: 11px;
+}
+
+.sx-command-connectivity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sx-command-connectivity-header > span:first-child {
+  color: #e1eafa;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sx-command-connectivity-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.sx-command-connectivity-meta span {
+  color: #859db9;
+}
+
+.sx-command-connectivity-meta strong {
+  color: #bed0e5;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.sx-command-diagnostic {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 13px;
+  border-radius: 9px;
+  border: 1px solid #31465f;
+  background: #17273b;
+}
+
+.sx-command-diagnostic strong {
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.sx-command-diagnostic p {
+  color: #aec0d6;
+  font-size: 11px;
+  line-height: 1.65;
+  margin: 0;
+}
+
+.sx-command-diagnostic.success {
+  border-color: rgba(61, 179, 127, 0.23);
+  background: rgba(40, 137, 100, 0.07);
+}
+
+.sx-command-diagnostic.success strong {
+  color: #8be8bc;
+}
+
+.sx-command-diagnostic.warning {
+  border-color: rgba(225, 172, 77, 0.3);
+  background: rgba(199, 142, 55, 0.08);
+}
+
+.sx-command-diagnostic.warning strong {
+  color: #f6ce8a;
+}
+
+.sx-command-diagnostic.danger {
+  border-color: rgba(226, 83, 107, 0.3);
+  background: rgba(199, 63, 91, 0.08);
+}
+
+.sx-command-diagnostic.danger strong {
+  color: #ffacba;
+}
+
+.sx-command-diagnostic.unknown strong {
+  color: #b9cadd;
+}
+
+.sx-command-device {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sx-command-card-bottom,
+.sx-command-history-row,
+.sx-command-section-heading,
+.sx-command-device-top {
+  min-width: 0;
+}
+
+.sx-command-device-identity,
+.sx-command-details strong,
+.sx-command-activity-content,
+.sx-command-last-action {
+  overflow-wrap: anywhere;
+}
+
+.sx-command-action,
+.sx-command-undo-button,
+.sx-command-refresh,
+.sx-command-history-open {
+  touch-action: manipulation;
+}
+
+@media (max-width: 1200px) {
+  .sx-command-connectivity-overview {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sx-command-connectivity-counts {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .sx-command-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sx-command-connectivity-strip {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 650px) {
+  .sx-command-device-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sx-command-connectivity-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sx-command-connectivity-counts > span {
+    text-align: center;
+  }
+
+  .sx-command-panel {
+    padding: 15px;
+  }
+
+  .sx-command-history-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sx-command-details-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .sx-command-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .sx-command-stat {
+    padding: 13px;
+  }
+
+  .sx-command-stat strong {
+    font-size: 25px;
+  }
+
+  .sx-command-stat small {
+    font-size: 10px;
+  }
+
+  .sx-command-connectivity-strip {
+    padding: 13px;
+  }
+
+  .sx-command-state-grid {
+    gap: 7px;
+  }
+
+  .sx-command-state-panel {
+    padding: 10px;
+  }
+
+  .sx-command-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sx-command-undo-button {
+    min-height: 46px;
+  }
+}

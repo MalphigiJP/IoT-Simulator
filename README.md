@@ -210,7 +210,17 @@ Phase 3 uses a standalone .NET 10 IoT device simulator that generates realistic 
 ### Technologies Used
 C# 13, .NET 10, HttpClient, asynchronous Tasks, PeriodicTimer, Channels, ASP.NET Core Minimal APIs, Entity Framework Core and SQL Server.
 
+## Phase 4: Real-Time IoT Device Commands, Manual Overrides and Persistent History
+Phase 4 introduces bidirectional communication between the Smart-X backend and simulated IoT devices.
+While Phase 3 focused on device registration, telemetry ingestion, fault detection and load testing, Phase 4 enables operators to issue manual control instructions to connected devices.
+The system supports controlling pumps, irrigation valves and smart plugs through REST APIs. Devices periodically retrieve pending commands, execute them, and send acknowledgements confirming whether the requested operation succeeded.
 
+### Implemented Features
+- Device Command Models and Control States
+- Device Command Service and REST API
+- Simulated Device Command Execution and Acknowledgement
+- Manual Command Undo Using Stack<T>
+- Persistent Command History and SQL Server Audit Logging
 ## Reference List
 
 ## Assigment 2
@@ -227,6 +237,8 @@ Microsoft Ignite.2026.SortedDictionary TKey,TValue Class. [online]. Available at
 Microsoft Ignite.2026.Task asynchronous programming model. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/task-asynchronous-programming-model> [Accessed 17 October 2026]
 
 Microsoft Ingite.2026.PeriodicTimer Class. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/api/system.threading.periodictimer?view=net-10.0/> [Accessed 17 October 2026]
+
+Microsoft Ingite.2026.Dictionary<TKey,TValue> Class. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2?view=net-10.0> [Accessed 17 October 2026]
 
 ## Assignment 1
 GitHubDocs. 2026 Building and testing Node.js [online] Available at: <https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs > 

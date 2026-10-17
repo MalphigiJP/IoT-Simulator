@@ -16,6 +16,15 @@ public class SmartXContext : DbContext
     public DbSet<TelemetryRecord> TelemetryRecords =>
         Set<TelemetryRecord>();
 
+    public DbSet<DeviceCommand> DeviceCommands =>
+    Set<DeviceCommand>();
+
+    public DbSet<DeviceControlState> DeviceControlStates =>
+        Set<DeviceControlState>();
+
+    public DbSet<DeviceCommandAuditEvent> DeviceCommandAuditEvents =>
+        Set<DeviceCommandAuditEvent>();
+
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {

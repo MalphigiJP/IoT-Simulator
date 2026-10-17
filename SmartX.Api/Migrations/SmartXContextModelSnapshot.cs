@@ -22,6 +22,124 @@ namespace SmartX.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SmartX.Api.Models.DeviceCommand", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeliveredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Origin")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("PreviousDesiredState")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("RequestedState")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Target")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("UndoOfCommandId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeviceCommands");
+                });
+
+            modelBuilder.Entity("SmartX.Api.Models.DeviceCommandAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("CommandId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool?>("DesiredState")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("ReportedState")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeviceCommandAuditEvents");
+                });
+
+            modelBuilder.Entity("SmartX.Api.Models.DeviceControlState", b =>
+                {
+                    b.Property<int>("SensorId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SensorId"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("DesiredState")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("LastCommandId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("LastDesiredChangeAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastReportedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("ReportedState")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("Revision")
+                        .HasColumnType("bigint");
+
+                    b.Property<int?>("SupportedTarget")
+                        .HasColumnType("int");
+
+                    b.HasKey("SensorId");
+
+                    b.ToTable("DeviceControlStates");
+                });
+
             modelBuilder.Entity("SmartX.Api.Models.Sensor", b =>
                 {
                     b.Property<int>("Id")

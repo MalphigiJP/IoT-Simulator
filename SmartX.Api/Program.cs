@@ -52,6 +52,8 @@ builder.Services.AddHostedService<DeviceConnectivityMonitor>();
 builder.Services.AddSingleton<TelemetryQueue>();
 builder.Services.AddHostedService<TelemetryQueueWorker>();
 builder.Services.AddSingleton<DeviceCommandService>();
+builder.Services.AddSingleton<DeviceCommandPersistence>();
+builder.Services.AddHostedService<DeviceCommandRestoreService>();
 
 var app = builder.Build();
 

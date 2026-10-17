@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace SmartX.Api.Models;
 
 public sealed record DeviceControlState
 {
+    [Key]
     public int SensorId { get; init; }
 
     public string MacAddress { get; init; } = "";

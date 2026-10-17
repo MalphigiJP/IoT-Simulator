@@ -92,7 +92,7 @@ public sealed record UndoCreationResult(
     DeviceControlState State
 );
 
-public sealed class DeviceCommandService
+public sealed partial class DeviceCommandService
 {
     private readonly object _sync = new();
 
@@ -193,6 +193,12 @@ public sealed class DeviceCommandService
 
             _states[sensor.Id] = updated;
 
+            PersistLocked(
+                sensor.Id,
+                "CommandSubmitted",
+                command.Id
+            );
+
             return new(
                 CommandCreateOutcome.Created,
                 command,
@@ -284,6 +290,12 @@ public sealed class DeviceCommandService
             };
 
             _states[sensor.Id] = updated;
+
+            PersistLocked(
+                sensor.Id,
+                "UndoRequested",
+                command.Id
+            );
 
             return new(
                 UndoCreateOutcome.Created,
@@ -417,6 +429,12 @@ public sealed class DeviceCommandService
                 };
 
                 _commands[id] = delivered;
+
+                PersistLocked(
+                    sensorId,
+                    "CommandDelivered",
+                    id
+                );
 
                 return delivered;
             }
@@ -603,6 +621,29 @@ public sealed class DeviceCommandService
                 }
             }
 
+
+            string auditAction = command.Origin switch
+            {
+                DeviceCommandOrigin.Undo when applied =>
+                    "UndoApplied",
+
+                DeviceCommandOrigin.Undo =>
+                    "UndoFailed",
+
+                _ when applied =>
+                    "CommandApplied",
+
+                _ =>
+                    "CommandFailed"
+            };
+
+            PersistLocked(
+                sensorId,
+                auditAction,
+                commandId
+            );
+
+
             return new(
                 applied
                     ? CommandAckOutcome.Applied
@@ -670,6 +711,12 @@ public sealed class DeviceCommandService
             };
 
             _states[sensor.Id] = updated;
+
+            PersistLocked(
+                sensor.Id,
+                "StateReported",
+                null
+            );
 
             return new(
                 ControlReportOutcome.Updated,
@@ -760,6 +807,12 @@ public sealed class DeviceCommandService
                 };
             }
 
+            PersistLocked(
+                command.SensorId,
+                "CommandCancelled",
+                commandId
+            );
+
             return new(
                 CommandCancelOutcome.Cancelled,
                 cancelled
@@ -774,6 +827,12 @@ public sealed class DeviceCommandService
             _states.Remove(sensorId);
 
             _undoStacks.Remove(sensorId);
+
+            PersistLocked(
+                sensorId,
+                "SensorRemoved",
+                null
+            );
 
             if (_commandsBySensor.Remove(
                     sensorId,
@@ -847,6 +906,12 @@ public sealed class DeviceCommandService
 
             _states.Add(sensor.Id, initial);
 
+            PersistLocked(
+                sensor.Id,
+                "StateInitialized",
+                null
+            );
+
             return initial;
         }
 
@@ -919,6 +984,12 @@ public sealed class DeviceCommandService
                 };
 
             _states[sensor.Id] = reset;
+
+            PersistLocked(
+                sensor.Id,
+                "IdentityChanged",
+                null
+            );
 
             return reset;
         }

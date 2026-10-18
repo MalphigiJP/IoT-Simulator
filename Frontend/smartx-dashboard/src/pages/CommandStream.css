@@ -1,1380 +1,2559 @@
-
 .sx-command-page {
+
   min-height: calc(100vh - 72px);
+
   width: 100%;
+
   padding: 32px;
+
   color: #e9f1fa;
+
   background:
+
     radial-gradient(
+
       ellipse at 10% 0%,
+
       rgba(44, 170, 173, 0.12),
+
       transparent 40%
+
     ),
+
     linear-gradient(145deg, #0a1220, #111e30);
+
   font-family: Inter, system-ui, sans-serif;
+
 }
 
 .sx-command-page * {
+
   box-sizing: border-box;
+
 }
 
 .sx-command-header {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: flex-start;
+
   gap: 24px;
+
   max-width: 1600px;
+
   margin: 0 auto 28px;
+
 }
 
 .sx-command-eyebrow {
+
   color: #70ded7;
+
   font-size: 11px;
+
   font-weight: 750;
+
   letter-spacing: 2px;
+
   margin-bottom: 10px;
+
 }
 
 .sx-command-header h1 {
+
   color: #f4f8ff;
+
   font-size: clamp(26px, 3vw, 38px);
+
   font-weight: 750;
+
   letter-spacing: -1px;
+
   margin: 0 0 9px;
+
 }
 
 .sx-command-header p {
+
   color: #93a6bf;
+
   font-size: 14px;
+
   line-height: 1.6;
+
   margin: 0;
+
   max-width: 570px;
+
 }
 
 .sx-command-header-actions {
+
   display: flex;
+
   align-items: center;
+
   gap: 14px;
+
   flex-wrap: wrap;
+
 }
 
 .sx-command-live-indicator {
+
   display: inline-flex;
+
   align-items: center;
+
   gap: 9px;
+
   color: #b8cbe0;
+
   font-size: 12px;
+
   white-space: nowrap;
+
 }
 
 .sx-command-live-indicator span {
+
   width: 8px;
+
   height: 8px;
+
   border-radius: 50%;
+
   background: #53d6a2;
+
   box-shadow: 0 0 12px rgba(83, 214, 162, 0.6);
+
 }
 
 .sx-command-refresh,
+
 .sx-command-pagination button {
+
   border: 1px solid #30435c;
+
   background: #18283d;
+
   color: #edf5ff;
+
   border-radius: 9px;
+
   padding: 10px 15px;
+
   font: inherit;
+
   font-size: 12px;
+
   font-weight: 650;
+
   cursor: pointer;
+
   transition:
+
     background 0.2s,
+
     border-color 0.2s;
+
 }
 
 .sx-command-refresh:hover,
+
 .sx-command-pagination button:not(:disabled):hover {
+
   background: #233953;
+
   border-color: #56c8ca;
+
 }
 
 .sx-command-refresh:focus-visible,
+
 .sx-command-pagination button:focus-visible,
+
 .sx-command-filters input:focus-visible,
+
 .sx-command-filters select:focus-visible {
+
   outline: 2px solid #70ded7;
+
   outline-offset: 3px;
+
 }
 
 .sx-command-error-banner,
+
 .sx-command-inline-error {
+
   padding: 13px 16px;
+
   color: #ffb5bd;
+
   background: rgba(239, 90, 110, 0.09);
+
   border: 1px solid rgba(239, 90, 110, 0.3);
+
   border-radius: 10px;
+
   font-size: 13px;
+
 }
 
 .sx-command-error-banner {
+
   max-width: 1600px;
+
   margin: 0 auto 20px;
+
 }
 
 .sx-command-stats {
+
   display: grid;
+
   grid-template-columns: repeat(4, minmax(0, 1fr));
+
   gap: 14px;
+
   max-width: 1600px;
+
   margin: 0 auto 24px;
+
 }
 
 .sx-command-stat {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 7px;
+
   padding: 20px;
+
   min-width: 0;
+
   background: #152338;
+
   border: 1px solid #26374d;
+
   border-radius: 14px;
+
 }
 
 .sx-command-stat > span {
+
   color: #9db1c9;
+
   font-size: 12px;
+
   font-weight: 600;
+
 }
 
 .sx-command-stat strong {
+
   color: #f4f9ff;
+
   font-size: 30px;
+
   line-height: 1.2;
+
   font-weight: 750;
+
   font-variant-numeric: tabular-nums;
+
 }
 
 .sx-command-stat small {
+
   color: #758ca6;
+
   font-size: 11px;
+
 }
 
 .sx-command-layout {
+
   display: grid;
+
   grid-template-columns: minmax(0, 1fr) 310px;
+
   align-items: start;
+
   gap: 20px;
+
   max-width: 1600px;
+
   margin: 0 auto;
+
 }
 
 .sx-command-main,
+
 .sx-command-sidebar {
+
   min-width: 0;
+
 }
 
 .sx-command-sidebar {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 20px;
+
 }
 
 .sx-command-panel {
+
   background: rgba(19, 32, 50, 0.96);
+
   border: 1px solid #293c54;
+
   border-radius: 16px;
+
   padding: 22px;
+
 }
 
 .sx-command-section-heading {
+
   display: flex;
+
   align-items: flex-start;
+
   justify-content: space-between;
+
   gap: 16px;
+
   margin-bottom: 22px;
+
 }
 
 .sx-command-section-heading h2,
+
 .sx-command-help h2 {
+
   margin: 0 0 6px;
+
   color: #f3f8ff;
+
   font-size: 17px;
+
   font-weight: 700;
+
 }
 
 .sx-command-section-heading p {
+
   margin: 0;
+
   color: #879bb4;
+
   font-size: 12px;
+
 }
 
 .sx-command-counter {
+
   padding: 6px 10px;
+
   color: #8ee5df;
+
   background: rgba(78, 205, 203, 0.1);
+
   border: 1px solid rgba(78, 205, 203, 0.22);
+
   border-radius: 8px;
+
   font-size: 11px;
+
   font-weight: 650;
+
   white-space: nowrap;
+
 }
 
 .sx-command-filters {
+
   display: grid;
+
   grid-template-columns: minmax(0, 1fr) 180px;
+
   gap: 10px;
+
   margin-bottom: 20px;
+
 }
 
 .sx-command-filters input,
+
 .sx-command-filters select {
+
   width: 100%;
+
   min-height: 42px;
+
   min-width: 0;
+
   padding: 10px 12px;
+
   color: #e7f0fc;
+
   background: #0d1929;
+
   border: 1px solid #31455f;
+
   border-radius: 9px;
+
   font: inherit;
+
   font-size: 12px;
+
 }
 
 .sx-command-filters input::placeholder {
+
   color: #768da7;
+
 }
 
 .sx-command-device-grid {
+
   display: grid;
+
   grid-template-columns: repeat(2, minmax(0, 1fr));
+
   gap: 14px;
+
 }
 
 .sx-command-device {
+
   display: flex;
+
   flex-direction: column;
+
   min-width: 0;
+
   padding: 17px;
+
   border: 1px solid #31455c;
+
   border-radius: 13px;
+
   background:
+
     linear-gradient(
+
       155deg,
+
       rgba(27, 45, 67, 0.9),
+
       rgba(18, 30, 47, 0.94)
+
     );
+
 }
 
 .sx-command-device-top,
+
 .sx-command-device-footer {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   gap: 10px;
+
 }
 
 .sx-command-device-icon {
+
   display: grid;
+
   place-items: center;
+
   width: 37px;
+
   height: 37px;
+
   color: #84e2df;
+
   background: rgba(79, 207, 201, 0.1);
+
   border: 1px solid rgba(79, 207, 201, 0.2);
+
   border-radius: 10px;
+
   font-size: 20px;
+
 }
 
 .sx-command-pill {
+
   display: inline-flex;
+
   align-items: center;
+
   gap: 7px;
+
   width: max-content;
+
   max-width: 100%;
+
   padding: 6px 9px;
+
   border-radius: 7px;
+
   font-size: 10px;
+
   font-weight: 700;
+
   white-space: nowrap;
+
 }
 
 .sx-command-pill.success {
+
   color: #80e5bd;
+
   background: rgba(57, 189, 131, 0.13);
+
 }
 
 .sx-command-pill.warning {
+
   color: #f8cf85;
+
   background: rgba(235, 169, 76, 0.13);
+
 }
 
 .sx-command-pill.danger {
+
   color: #ffa1ad;
+
   background: rgba(232, 87, 110, 0.15);
+
 }
 
 .sx-command-pill.unknown {
+
   color: #adc0d8;
+
   background: rgba(160, 182, 210, 0.1);
+
 }
 
 .sx-command-status-dot {
+
   width: 6px;
+
   height: 6px;
+
   border-radius: 50%;
+
   background: currentColor;
+
 }
 
 .sx-command-device-heading {
+
   margin-top: 18px;
+
 }
 
 .sx-command-device-heading h3 {
+
   margin: 0 0 6px;
+
   color: #f2f7ff;
+
   font-size: 15px;
+
   font-weight: 700;
+
 }
 
 .sx-command-device-heading p {
+
   margin: 0;
+
   color: #9bafc7;
+
   font-size: 12px;
+
 }
 
 .sx-command-device-identity {
+
   display: flex;
+
   flex-wrap: wrap;
+
   gap: 6px 10px;
+
   margin: 14px 0;
+
   color: #7694b3;
+
   font-size: 10px;
+
   overflow-wrap: anywhere;
+
 }
 
 .sx-command-state-grid {
+
   display: grid;
+
   grid-template-columns: repeat(2, minmax(0, 1fr));
+
   gap: 9px;
+
 }
 
 .sx-command-state-panel {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 10px;
+
   min-width: 0;
+
   padding: 12px;
+
   background: rgba(8, 19, 32, 0.55);
+
   border: 1px solid #293c53;
+
   border-radius: 9px;
+
 }
 
 .sx-command-state-panel span {
+
   color: #8fa6c1;
+
   font-size: 10px;
+
 }
 
 .sx-command-state-panel strong {
+
   color: #e9f5ff;
+
   font-size: 15px;
+
   font-weight: 700;
+
 }
 
 .sx-command-device-footer {
+
   margin-top: 16px;
+
   padding-top: 14px;
+
   border-top: 1px solid #2c4058;
+
 }
 
 .sx-command-device-footer > div:first-child {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 7px;
+
 }
 
 .sx-command-mini-label {
+
   color: #8298b2;
+
   font-size: 10px;
+
 }
 
 .sx-command-revision {
+
   align-self: flex-end;
+
   color: #7f95ae;
+
   font-size: 10px;
+
 }
 
 .sx-command-last-action {
+
   margin-top: 13px;
+
   padding: 10px;
+
   color: #a8bcd4;
+
   background: rgba(12, 23, 38, 0.65);
+
   border-radius: 8px;
+
   font-size: 11px;
+
   line-height: 1.5;
+
 }
 
 .sx-command-device-error {
+
   margin: 12px 0 0;
+
   color: #ffadb6;
+
   font-size: 11px;
+
   line-height: 1.5;
+
 }
 
 .sx-command-pagination {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   gap: 12px;
+
   margin-top: 22px;
+
   color: #91a7c0;
+
   font-size: 12px;
+
 }
 
 .sx-command-pagination > div {
+
   display: flex;
+
   gap: 8px;
+
 }
 
 .sx-command-pagination button:disabled {
+
   opacity: 0.4;
+
   cursor: not-allowed;
+
 }
 
 .sx-command-update-time {
+
   margin: 12px 3px 0;
+
   color: #8097b2;
+
   font-size: 11px;
+
 }
 
 .sx-command-activity-list {
+
   display: flex;
+
   flex-direction: column;
+
 }
 
 .sx-command-activity-item {
+
   display: flex;
+
   gap: 11px;
+
   padding: 15px 0;
+
   border-top: 1px solid #293b53;
+
 }
 
 .sx-command-activity-marker {
+
   flex-shrink: 0;
+
   width: 9px;
+
   height: 9px;
+
   margin-top: 4px;
+
   background: #63d7d2;
+
   border: 2px solid #173c45;
+
   border-radius: 50%;
+
 }
 
 .sx-command-activity-content {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 6px;
+
   min-width: 0;
+
 }
 
 .sx-command-activity-content strong {
+
   color: #e6f0fb;
+
   font-size: 12px;
+
   overflow-wrap: anywhere;
+
 }
 
 .sx-command-activity-content span {
+
   color: #a0b5cf;
+
   font-size: 11px;
+
 }
 
 .sx-command-activity-content small {
+
   color: #6f89a7;
+
   font-size: 10px;
+
 }
 
 .sx-command-empty,
+
 .sx-command-empty-activity {
+
   padding: 36px 18px;
+
   text-align: center;
+
   color: #98acc4;
+
   font-size: 13px;
+
   line-height: 1.6;
+
 }
 
 .sx-command-empty strong {
+
   display: block;
+
   color: #e8f1fd;
+
   margin-bottom: 8px;
+
 }
 
 .sx-command-empty p {
+
   margin: 0;
+
 }
 
 .sx-command-help {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 16px;
+
 }
 
 .sx-command-help h2 {
+
   margin-bottom: 4px;
+
 }
 
 .sx-command-help > div {
+
   display: flex;
+
   flex-direction: column;
+
   align-items: flex-start;
+
   gap: 8px;
+
 }
 
 .sx-command-help p {
+
   color: #91a6bf;
+
   font-size: 11px;
+
   line-height: 1.6;
+
   margin: 0;
+
 }
 
 @media (max-width: 1150px) {
+
   .sx-command-layout {
+
     grid-template-columns: minmax(0, 1fr);
+
   }
 
   .sx-command-sidebar {
+
     display: grid;
+
     grid-template-columns: repeat(2, minmax(0, 1fr));
+
   }
+
 }
 
 @media (max-width: 780px) {
+
   .sx-command-page {
+
     padding: 20px;
+
   }
 
   .sx-command-stats {
+
     grid-template-columns: repeat(2, minmax(0, 1fr));
+
   }
 
   .sx-command-header {
+
     flex-direction: column;
+
   }
 
   .sx-command-header-actions {
+
     width: 100%;
+
     justify-content: space-between;
+
   }
 
   .sx-command-sidebar {
+
     grid-template-columns: 1fr;
+
   }
+
 }
 
 @media (max-width: 600px) {
+
   .sx-command-page {
+
     padding: 14px;
+
   }
 
   .sx-command-panel {
+
     padding: 16px;
+
   }
 
   .sx-command-filters,
+
   .sx-command-device-grid {
+
     grid-template-columns: 1fr;
+
   }
 
   .sx-command-section-heading {
+
     flex-wrap: wrap;
+
   }
 
   .sx-command-pagination {
+
     flex-wrap: wrap;
+
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .sx-command-refresh,
+
   .sx-command-pagination button {
+
     transition: none;
+
   }
+
 }
 
-
 .sx-command-control-section {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 12px;
+
   margin-top: 18px;
+
   padding-top: 17px;
+
   border-top: 1px solid #2c4058;
+
 }
 
 .sx-command-control-heading {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   gap: 10px;
+
 }
 
 .sx-command-control-heading > span:first-child {
+
   color: #e4eefb;
+
   font-size: 12px;
+
   font-weight: 700;
+
 }
 
 .sx-command-control-type {
+
   color: #85dcd8;
+
   font-size: 11px;
+
   font-weight: 650;
+
 }
 
 .sx-command-action-grid {
+
   display: grid;
+
   grid-template-columns: repeat(2, minmax(0, 1fr));
+
   gap: 9px;
+
 }
 
 .sx-command-action {
+
   display: flex;
+
   align-items: center;
+
   justify-content: center;
+
   gap: 8px;
+
   min-height: 44px;
+
   min-width: 0;
+
   padding: 10px 12px;
+
   border: 1px solid transparent;
+
   border-radius: 9px;
+
   font: inherit;
+
   font-size: 12px;
+
   font-weight: 700;
+
   cursor: pointer;
+
   transition:
+
     background 0.2s ease,
+
     border-color 0.2s ease,
+
     transform 0.2s ease;
+
 }
 
 .sx-command-action-on {
+
   color: #98f2cf;
+
   background: rgba(43, 174, 122, 0.12);
+
   border-color: rgba(70, 199, 149, 0.3);
+
 }
 
 .sx-command-action-off {
+
   color: #f6cba4;
+
   background: rgba(219, 139, 72, 0.11);
+
   border-color: rgba(228, 149, 86, 0.3);
+
 }
 
 .sx-command-action-on:not(:disabled):hover {
+
   background: rgba(43, 174, 122, 0.25);
+
   border-color: #61d9ab;
+
   transform: translateY(-1px);
+
 }
 
 .sx-command-action-off:not(:disabled):hover {
+
   background: rgba(219, 139, 72, 0.24);
+
   border-color: #ebaf79;
+
   transform: translateY(-1px);
+
 }
 
 .sx-command-action-active {
+
   border-color: currentColor;
+
 }
 
 .sx-command-action:disabled {
+
   opacity: 0.44;
+
   cursor: not-allowed;
+
 }
 
 .sx-command-action:focus-visible {
+
   outline: 2px solid #76e8df;
+
   outline-offset: 3px;
+
 }
 
 .sx-command-control-hint {
+
   margin: 0;
+
   min-height: 28px;
+
   color: #8ca2bd;
+
   font-size: 10px;
+
   line-height: 1.5;
+
 }
 
 .sx-command-feedback {
+
   padding: 11px 12px;
+
   border-radius: 9px;
+
   font-size: 11px;
+
   font-weight: 550;
+
   line-height: 1.6;
+
 }
 
 .sx-command-feedback.success {
+
   color: #9ceacb;
+
   background: rgba(51, 170, 124, 0.1);
+
   border: 1px solid rgba(51, 170, 124, 0.3);
+
 }
 
 .sx-command-feedback.error {
+
   color: #ffb1bc;
+
   background: rgba(227, 85, 110, 0.1);
+
   border: 1px solid rgba(227, 85, 110, 0.32);
+
 }
 
 .sx-command-last-report {
+
   margin-top: 12px;
+
   color: #7f96b2;
+
   font-size: 10px;
+
   line-height: 1.5;
+
 }
 
 @media (max-width: 440px) {
+
   .sx-command-action-grid {
+
     grid-template-columns: 1fr;
+
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .sx-command-action {
+
     transition: none;
+
   }
+
 }
 
-
 .sx-command-undo-panel {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 10px;
+
   padding: 14px;
+
   margin-top: 4px;
+
   border: 1px solid rgba(124, 151, 187, 0.24);
+
   border-radius: 11px;
+
   background: rgba(10, 21, 36, 0.65);
+
 }
 
 .sx-command-undo-heading {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   flex-wrap: wrap;
+
   gap: 8px;
+
 }
 
 .sx-command-undo-heading > span:first-child {
+
   font-size: 12px;
+
   font-weight: 700;
+
   color: #e2edf9;
+
 }
 
 .sx-command-undo-panel p {
+
   color: #95acc5;
+
   font-size: 11px;
+
   line-height: 1.6;
+
   margin: 0;
+
 }
 
 .sx-command-undo-button {
+
   width: 100%;
+
   min-height: 42px;
+
   padding: 10px 14px;
+
   border: 1px solid rgba(164, 143, 242, 0.45);
+
   border-radius: 9px;
+
   color: #d5c8ff;
+
   background: rgba(130, 102, 221, 0.17);
+
   font: inherit;
+
   font-size: 12px;
+
   font-weight: 700;
+
   cursor: pointer;
+
   transition: background 0.2s, border-color 0.2s;
+
 }
 
 .sx-command-undo-button:not(:disabled):hover {
+
   background: rgba(130, 102, 221, 0.31);
+
   border-color: #b09cff;
+
 }
 
 .sx-command-undo-button:disabled {
+
   opacity: 0.43;
+
   cursor: not-allowed;
+
 }
 
 .sx-command-undo-button:focus-visible {
+
   outline: 2px solid #c6b7ff;
+
   outline-offset: 3px;
+
 }
 
 .sx-command-card-bottom {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   flex-wrap: wrap;
+
   gap: 10px;
+
   margin-top: 14px;
+
   color: #879eb9;
+
   font-size: 10px;
+
 }
 
 .sx-command-history-open {
+
   padding: 7px 10px;
+
   background: transparent;
+
   color: #83dfd8;
+
   border: 1px solid rgba(86, 202, 199, 0.28);
+
   border-radius: 8px;
+
   font: inherit;
+
   font-size: 11px;
+
   font-weight: 700;
+
   cursor: pointer;
+
 }
 
 .sx-command-history-open:hover,
+
 .sx-command-history-open.selected {
+
   background: rgba(77, 206, 202, 0.13);
+
   border-color: rgba(86, 202, 199, 0.55);
+
 }
 
 .sx-command-history-container {
+
   max-width: 1600px;
+
   margin: 24px auto 0;
+
 }
 
 .sx-command-history-panel {
+
   min-width: 0;
+
 }
 
 .sx-command-history-close {
+
   padding: 9px 13px;
+
   background: rgba(46, 67, 91, 0.55);
+
   color: #e4edf8;
+
   border: 1px solid #41566f;
+
   border-radius: 8px;
+
   cursor: pointer;
+
   font: inherit;
+
   font-size: 12px;
+
 }
 
 .sx-command-history-filters {
+
   display: grid;
+
   grid-template-columns: minmax(0, 1fr) 160px 130px;
+
   gap: 10px;
+
   margin-bottom: 16px;
+
 }
 
 .sx-command-history-filters input,
+
 .sx-command-history-filters select,
+
 .sx-command-audit-filters input,
+
 .sx-command-audit-filters select {
+
   min-width: 0;
+
   width: 100%;
+
   padding: 10px 12px;
+
   background: #0d1929;
+
   color: #e7f0fc;
+
   border: 1px solid #31455f;
+
   border-radius: 9px;
+
   font: inherit;
+
   font-size: 12px;
+
 }
 
 .sx-command-history-filters input::placeholder,
+
 .sx-command-audit-filters input::placeholder {
+
   color: #8297b0;
+
 }
 
 .sx-command-history-summary {
+
   display: flex;
+
   gap: 16px;
+
   flex-wrap: wrap;
+
   padding: 10px 0 16px;
+
   color: #9fb5cc;
+
   font-size: 11px;
+
   border-bottom: 1px solid #293c54;
+
 }
 
 .sx-command-history-list {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 12px;
+
   padding-top: 16px;
+
 }
 
 .sx-command-history-item {
+
   border: 1px solid #30445d;
+
   border-radius: 11px;
+
   background: rgba(15, 27, 44, 0.65);
+
   overflow: hidden;
+
 }
 
 .sx-command-history-row {
+
   display: flex;
+
   justify-content: space-between;
+
   align-items: center;
+
   gap: 16px;
+
   padding: 16px;
+
 }
 
 .sx-command-history-main {
+
   display: flex;
+
   flex-direction: column;
+
   align-items: flex-start;
+
   gap: 9px;
+
   min-width: 0;
+
 }
 
 .sx-command-history-tags {
+
   display: flex;
+
   gap: 8px;
+
   flex-wrap: wrap;
+
   align-items: center;
+
 }
 
 .sx-command-origin {
+
   font-size: 10px;
+
   font-weight: 750;
+
   letter-spacing: 0.3px;
+
   color: #beaafd;
+
   background: rgba(149, 120, 231, 0.12);
+
   border: 1px solid rgba(149, 120, 231, 0.2);
+
   border-radius: 7px;
+
   padding: 5px 9px;
+
 }
 
 .sx-command-history-main > strong {
+
   color: #eff5ff;
+
   font-size: 14px;
+
   line-height: 1.4;
+
 }
 
 .sx-command-history-main > span:last-child {
+
   color: #829bb8;
+
   font-size: 11px;
+
 }
 
 .sx-command-details-button {
+
   flex-shrink: 0;
+
   padding: 9px 13px;
+
   color: #a5e7e4;
+
   background: #192f43;
+
   border: 1px solid #32586b;
+
   border-radius: 8px;
+
   font: inherit;
+
   font-size: 11px;
+
   cursor: pointer;
+
 }
 
 .sx-command-details-button:hover {
+
   background: #254257;
+
 }
 
 .sx-command-details {
+
   display: grid;
+
   grid-template-columns: repeat(2, minmax(0, 1fr));
+
   gap: 16px;
+
   padding: 18px;
+
   border-top: 1px solid #2e4259;
+
   background: rgba(7, 17, 30, 0.45);
+
 }
 
 .sx-command-details > div {
+
   display: flex;
+
   flex-direction: column;
+
   min-width: 0;
+
   gap: 6px;
+
 }
 
 .sx-command-details span {
+
   color: #819ab7;
+
   font-size: 11px;
+
 }
 
 .sx-command-details strong {
+
   color: #dceafa;
+
   font-size: 12px;
+
   font-weight: 550;
+
   overflow-wrap: anywhere;
+
   line-height: 1.5;
+
 }
 
 .sx-command-load-more {
+
   width: 100%;
+
   padding: 12px;
+
   margin-top: 16px;
+
   background: rgba(40, 69, 94, 0.55);
+
   color: #c5e3ed;
+
   border: 1px solid #34526c;
+
   border-radius: 9px;
+
   font: inherit;
+
   font-size: 12px;
+
   font-weight: 700;
+
   cursor: pointer;
+
 }
 
 .sx-command-load-more:hover {
+
   background: rgba(51, 91, 119, 0.75);
+
 }
 
 .sx-command-audit-filters {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 9px;
+
   margin-bottom: 18px;
+
 }
 
 .sx-command-audit-note {
+
   margin: 15px 0 0;
+
   color: #7c93ae;
+
   font-size: 10px;
+
   line-height: 1.5;
+
 }
 
 .sx-command-activity-marker.success {
+
   background: #56d5a2;
+
 }
 
 .sx-command-activity-marker.warning {
+
   background: #e7ba76;
+
 }
 
 .sx-command-activity-marker.danger {
+
   background: #ee7d91;
+
 }
 
 .sx-command-activity-marker.unknown {
+
   background: #80bad0;
+
 }
 
 .sx-command-history-open:focus-visible,
+
 .sx-command-history-close:focus-visible,
+
 .sx-command-details-button:focus-visible,
+
 .sx-command-load-more:focus-visible,
+
 .sx-command-history-filters input:focus-visible,
+
 .sx-command-history-filters select:focus-visible,
+
 .sx-command-audit-filters input:focus-visible,
+
 .sx-command-audit-filters select:focus-visible {
+
   outline: 2px solid #77dfdb;
+
   outline-offset: 3px;
+
 }
 
 @media (max-width: 900px) {
+
   .sx-command-history-filters {
+
     grid-template-columns: minmax(0, 1fr) 1fr;
+
   }
 
   .sx-command-history-filters input {
+
     grid-column: 1 / -1;
+
   }
+
 }
 
 @media (max-width: 600px) {
+
   .sx-command-details {
+
     grid-template-columns: 1fr;
+
   }
 
   .sx-command-history-filters {
+
     grid-template-columns: 1fr;
+
   }
 
   .sx-command-history-filters input {
+
     grid-column: auto;
+
   }
 
   .sx-command-history-row {
+
     flex-direction: column;
+
     align-items: stretch;
+
   }
 
   .sx-command-details-button {
+
     align-self: flex-start;
+
   }
 
   .sx-command-history-container {
+
     margin-top: 16px;
+
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .sx-command-undo-button {
+
     transition: none;
+
   }
+
 }
 
-
-
 .sx-command-connectivity-strip {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 12px;
+
   max-width: 1600px;
+
   margin: 0 auto 22px;
+
   padding: 16px 20px;
+
   border: 1px solid #2d445c;
+
   border-radius: 13px;
+
   background: rgba(18, 33, 52, 0.92);
+
 }
 
 .sx-command-connectivity-overview {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   gap: 16px;
+
 }
 
 .sx-command-connectivity-overview h2 {
+
   color: #eaf3ff;
+
   margin: 0 0 5px;
+
   font-size: 14px;
+
   font-weight: 750;
+
 }
 
 .sx-command-connectivity-overview p {
+
   color: #92a8c2;
+
   font-size: 11px;
+
   margin: 0;
+
 }
 
 .sx-command-connectivity-counts {
+
   display: flex;
+
   flex-wrap: wrap;
+
   align-items: center;
+
   gap: 8px;
+
 }
 
 .sx-command-connectivity-counts > span {
+
   padding: 8px 11px;
+
   border-radius: 8px;
+
   font-size: 11px;
+
   font-weight: 700;
+
   white-space: nowrap;
+
 }
 
 .sx-command-count-online {
+
   color: #80e6b9;
+
   background: rgba(61, 183, 127, 0.12);
+
 }
 
 .sx-command-count-delayed {
+
   color: #f6d08f;
+
   background: rgba(222, 162, 67, 0.12);
+
 }
 
 .sx-command-count-offline {
+
   color: #ffacba;
+
   background: rgba(226, 84, 111, 0.14);
+
 }
 
 .sx-command-count-unknown {
+
   color: #b5c4d7;
+
   background: rgba(131, 155, 182, 0.12);
+
 }
 
 .sx-command-connectivity-timestamp {
+
   color: #809ab7;
+
   font-size: 10px;
+
 }
 
 .sx-command-connectivity-panel {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 12px;
+
   margin-top: 16px;
+
   padding: 14px;
+
   background: rgba(8, 19, 33, 0.52);
+
   border: 1px solid #30445c;
+
   border-radius: 11px;
+
 }
 
 .sx-command-connectivity-header {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   flex-wrap: wrap;
+
   gap: 10px;
+
 }
 
 .sx-command-connectivity-header > span:first-child {
+
   color: #e1eafa;
+
   font-size: 12px;
+
   font-weight: 700;
+
 }
 
 .sx-command-connectivity-meta {
+
   display: flex;
+
   align-items: center;
+
   justify-content: space-between;
+
   flex-wrap: wrap;
+
   gap: 8px;
+
   font-size: 11px;
+
 }
 
 .sx-command-connectivity-meta span {
+
   color: #859db9;
+
 }
 
 .sx-command-connectivity-meta strong {
+
   color: #bed0e5;
+
   font-size: 11px;
+
   font-weight: 650;
+
 }
 
 .sx-command-diagnostic {
+
   display: flex;
+
   flex-direction: column;
+
   gap: 7px;
+
   padding: 12px 13px;
+
   border-radius: 9px;
+
   border: 1px solid #31465f;
+
   background: #17273b;
+
 }
 
 .sx-command-diagnostic strong {
+
   font-size: 12px;
+
   font-weight: 750;
+
   line-height: 1.5;
+
 }
 
 .sx-command-diagnostic p {
+
   color: #aec0d6;
+
   font-size: 11px;
+
   line-height: 1.65;
+
   margin: 0;
+
 }
 
 .sx-command-diagnostic.success {
+
   border-color: rgba(61, 179, 127, 0.23);
+
   background: rgba(40, 137, 100, 0.07);
+
 }
 
 .sx-command-diagnostic.success strong {
+
   color: #8be8bc;
+
 }
 
 .sx-command-diagnostic.warning {
+
   border-color: rgba(225, 172, 77, 0.3);
+
   background: rgba(199, 142, 55, 0.08);
+
 }
 
 .sx-command-diagnostic.warning strong {
+
   color: #f6ce8a;
+
 }
 
 .sx-command-diagnostic.danger {
+
   border-color: rgba(226, 83, 107, 0.3);
+
   background: rgba(199, 63, 91, 0.08);
+
 }
 
 .sx-command-diagnostic.danger strong {
+
   color: #ffacba;
+
 }
 
 .sx-command-diagnostic.unknown strong {
+
   color: #b9cadd;
+
 }
 
 .sx-command-device {
+
   min-width: 0;
+
   overflow: hidden;
+
 }
 
 .sx-command-card-bottom,
+
 .sx-command-history-row,
+
 .sx-command-section-heading,
+
 .sx-command-device-top {
+
   min-width: 0;
+
 }
 
 .sx-command-device-identity,
+
 .sx-command-details strong,
+
 .sx-command-activity-content,
+
 .sx-command-last-action {
+
   overflow-wrap: anywhere;
+
 }
 
 .sx-command-action,
+
 .sx-command-undo-button,
+
 .sx-command-refresh,
+
 .sx-command-history-open {
+
   touch-action: manipulation;
+
 }
 
 @media (max-width: 1200px) {
+
   .sx-command-connectivity-overview {
+
     flex-direction: column;
+
     align-items: flex-start;
+
   }
 
   .sx-command-connectivity-counts {
+
     width: 100%;
+
+  }
+
+}
+
+@media (max-width: 900px) {
+
+  .sx-command-stats {
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  }
+
+  .sx-command-connectivity-strip {
+
+    padding: 16px;
+
+  }
+
+}
+
+@media (max-width: 650px) {
+
+  .sx-command-device-grid {
+
+    grid-template-columns: 1fr;
+
+  }
+
+  .sx-command-connectivity-counts {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  }
+
+  .sx-command-connectivity-counts > span {
+
+    text-align: center;
+
+  }
+
+  .sx-command-panel {
+
+    padding: 15px;
+
+  }
+
+  .sx-command-history-row {
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+  }
+
+  .sx-command-details-button {
+
+    width: 100%;
+
+  }
+
+}
+
+@media (max-width: 430px) {
+
+  .sx-command-stats {
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 9px;
+
+  }
+
+  .sx-command-stat {
+
+    padding: 13px;
+
+  }
+
+  .sx-command-stat strong {
+
+    font-size: 25px;
+
+  }
+
+  .sx-command-stat small {
+
+    font-size: 10px;
+
+  }
+
+  .sx-command-connectivity-strip {
+
+    padding: 13px;
+
+  }
+
+  .sx-command-state-grid {
+
+    gap: 7px;
+
+  }
+
+  .sx-command-state-panel {
+
+    padding: 10px;
+
+  }
+
+  .sx-command-action-grid {
+
+    grid-template-columns: 1fr;
+
+  }
+
+  .sx-command-undo-button {
+
+    min-height: 46px;
+
+  }
+
+}
+
+body:has(.sx-command-shell) {
+  display: block;
+  width: 100%;
+  min-width: 320px;
+  margin: 0;
+  background: #0b1320;
+}
+
+#root:has(.sx-command-shell) {
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+.sx-command-shell,
+.sx-command-shell *,
+.sx-command-shell *::before,
+.sx-command-shell *::after {
+  box-sizing: border-box;
+}
+
+.sx-command-shell {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  margin: 0;
+  color: #e9f1fa;
+  background: #0b1320;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 14px;
+  text-align: left;
+}
+
+.sx-command-skip {
+  position: fixed;
+  z-index: 30;
+  top: -80px;
+  left: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #0b1320;
+  background: #fff;
+}
+
+.sx-command-skip:focus {
+  top: 10px;
+}
+
+.sx-command-topnav {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  background: #0d1928;
+  border-bottom: 1px solid #27394d;
+}
+
+.sx-command-topnav > header,
+.sx-command-topnav .sx-registry-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  width: 100%;
+  max-width: 1850px;
+  min-height: 76px;
+  padding: 12px clamp(16px, 3vw, 44px);
+  margin: 0 auto;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.sx-command-topnav .sx-registry-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  color: #f1f9ff;
+  font-size: 23px;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sx-command-topnav .sx-registry-brand span:last-child {
+  color: #6ce7e0;
+}
+
+.sx-command-topnav nav,
+.sx-command-topnav .sx-registry-navlinks {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sx-command-topnav nav a,
+.sx-command-topnav .sx-registry-navlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #a9bfd4;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.sx-command-topnav nav a:hover {
+  color: #efffff;
+  background: #192e43;
+}
+
+.sx-command-topnav nav a[aria-current="page"],
+.sx-command-topnav .sx-registry-navlink--active {
+  color: #95eee8;
+  border-color: #29606a;
+  background: #17404b;
+}
+
+.sx-command-shell > .sx-command-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: calc(100vh - 76px);
+  margin: 0;
+  padding: 30px clamp(16px, 2.7vw, 48px) 48px;
+}
+
+.sx-command-page > .sx-command-header,
+.sx-command-page > .sx-command-stats,
+.sx-command-page > .sx-command-connectivity-strip,
+.sx-command-page > .sx-command-layout,
+.sx-command-page > .sx-command-history-container,
+.sx-command-page > .sx-command-error-banner {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.sx-command-page > .sx-command-layout {
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 23vw, 440px);
+}
+
+.sx-command-page .sx-command-main,
+.sx-command-page .sx-command-sidebar,
+.sx-command-page .sx-command-panel,
+.sx-command-page .sx-command-device-grid,
+.sx-command-page .sx-command-device {
+  min-width: 0;
+}
+
+@media (max-width: 1150px) {
+  .sx-command-page > .sx-command-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 900px) {
-  .sx-command-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .sx-command-topnav > header,
+  .sx-command-topnav .sx-registry-navbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding-block: 15px;
   }
 
-  .sx-command-connectivity-strip {
-    padding: 16px;
+  .sx-command-topnav nav,
+  .sx-command-topnav .sx-registry-navlinks {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .sx-command-topnav nav a {
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 650px) {
-  .sx-command-device-grid {
-    grid-template-columns: 1fr;
+  .sx-command-shell > .sx-command-page {
+    padding: 20px 13px 32px;
   }
 
-  .sx-command-connectivity-counts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .sx-command-topnav > header,
+  .sx-command-topnav .sx-registry-navbar {
+    padding-inline: 13px;
   }
 
-  .sx-command-connectivity-counts > span {
-    text-align: center;
+  .sx-command-topnav .sx-registry-brand {
+    font-size: 21px;
   }
 
-  .sx-command-panel {
-    padding: 15px;
-  }
-
-  .sx-command-history-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .sx-command-details-button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 430px) {
-  .sx-command-stats {
-    grid-template-columns: 1fr 1fr;
-    gap: 9px;
-  }
-
-  .sx-command-stat {
-    padding: 13px;
-  }
-
-  .sx-command-stat strong {
-    font-size: 25px;
-  }
-
-  .sx-command-stat small {
-    font-size: 10px;
-  }
-
-  .sx-command-connectivity-strip {
-    padding: 13px;
-  }
-
-  .sx-command-state-grid {
-    gap: 7px;
-  }
-
-  .sx-command-state-panel {
-    padding: 10px;
-  }
-
-  .sx-command-action-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .sx-command-undo-button {
-    min-height: 46px;
+  .sx-command-topnav nav a {
+    padding: 9px 11px;
+    font-size: 11px;
   }
 }

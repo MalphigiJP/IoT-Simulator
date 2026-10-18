@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createDeviceCommand,
@@ -14,6 +13,7 @@ import {
 import { getConnectionStatus } from "../utils/commandConnectivity";
 import { useDeviceConnectivity } from "../hooks/useDeviceConnectivity";
 import CommandConnectivityPanel from "../components/CommandConnectivityPanel";
+import Navbar from "../components/Navbar";
 import "./CommandStream.css";
 import { recordOperatorSearch } from "../api/insightApi";
 const PAGE_SIZE = 8;
@@ -1469,7 +1469,14 @@ async function handleDeviceSearchKeyDown(event) {
   }
 
   return (
-    <main className="sx-command-page">
+    <div className="sx-command-shell">
+      <a className="sx-command-skip" href="#sx-command-main">
+        Skip to Command Centre
+      </a>
+      <div className="sx-command-topnav">
+        <Navbar variant="top" />
+      </div>
+      <main id="sx-command-main" className="sx-command-page">
       <header className="sx-command-header">
         <div>
           <div className="sx-command-eyebrow">
@@ -1761,6 +1768,7 @@ async function handleDeviceSearchKeyDown(event) {
           }}
         />
       </div>
-    </main>
+      </main>
+    </div>
   );
 }

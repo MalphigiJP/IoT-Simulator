@@ -1,0 +1,89 @@
+{
+  "VerifiedAtUtc": "2026-10-18T08:43:21.5333199Z",
+  "ApiUrl": "http://localhost:5000",
+  "Days": 1,
+  "WindowMinutes": 1,
+  "Passed": 13,
+  "Failed": 0,
+  "Skipped": 0,
+  "Checks": [
+    {
+      "Name": "API startup",
+      "Status": "PASS",
+      "TimeMs": 82.4,
+      "Detail": "GET /"
+    },
+    {
+      "Name": "Sensor registry",
+      "Status": "PASS",
+      "TimeMs": 14.4,
+      "Detail": "GET /api/sensors"
+    },
+    {
+      "Name": "Sensor health",
+      "Status": "PASS",
+      "TimeMs": 558.4,
+      "Detail": "GET /api/sensors/health"
+    },
+    {
+      "Name": "Historical telemetry",
+      "Status": "PASS",
+      "TimeMs": 25.2,
+      "Detail": "GET /api/telemetry"
+    },
+    {
+      "Name": "Live device registry",
+      "Status": "PASS",
+      "TimeMs": 12.4,
+      "Detail": "GET /api/devices/live"
+    },
+    {
+      "Name": "Command audit history",
+      "Status": "PASS",
+      "TimeMs": 35.1,
+      "Detail": "GET /api/commands/audit?limit=10"
+    },
+    {
+      "Name": "Operator search history",
+      "Status": "PASS",
+      "TimeMs": 34.6,
+      "Detail": "GET /api/insights/searches?limit=10"
+    },
+    {
+      "Name": "Unified interaction history",
+      "Status": "PASS",
+      "TimeMs": 37.7,
+      "Detail": "GET /api/insights/interactions?limit=10"
+    },
+    {
+      "Name": "Historical relationship analysis",
+      "Status": "PASS",
+      "TimeMs": 157.0,
+      "Detail": "GET /api/insights/relationships?days=1&windowMinutes=1"
+    },
+    {
+      "Name": "Recommendation ranking",
+      "Status": "PASS",
+      "TimeMs": 48.3,
+      "Detail": "GET /api/insights/recommendations?days=1&windowMinutes=1"
+    },
+    {
+      "Name": "Actuator control state",
+      "Status": "PASS",
+      "TimeMs": 6.0,
+      "Detail": "GET /api/devices/15/control"
+    },
+    {
+      "Name": "Actuator command history",
+      "Status": "PASS",
+      "TimeMs": 37.7,
+      "Detail": "GET /api/devices/15/commands"
+    },
+    {
+      "Name": "Undo availability",
+      "Status": "PASS",
+      "TimeMs": 9.4,
+      "Detail": "GET /api/devices/15/commands/undo/status"
+    }
+  ]
+}

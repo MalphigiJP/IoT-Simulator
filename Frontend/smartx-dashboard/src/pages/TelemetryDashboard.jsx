@@ -13,11 +13,11 @@ import { getSensors, getSensorHealth } from "../api/sensorApi";
 import { getTelemetry, getSensorTelemetry } from "../api/telemetryApi";
 import Navbar from "../components/Navbar";
 import { useAppState } from "../context/AppStateContext";
+import "./TelemetryDashboard.css";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
-// Demonstration thresholds: move these to per-sensor server-side configuration
-// before using Smart-X for production safety or operational decisions.
+
 const THRESHOLDS = {
   temperature: { limit: 50, direction: "above", unit: "°C", label: "Temperature spike" },
   soilMoisture: { limit: 10, direction: "below", unit: "%", label: "Low soil moisture" },
@@ -146,7 +146,7 @@ export default function TelemetryDashboard() {
 
   useEffect(() => {
     loadDashboard();
-    // Current implementation uses polling; SignalR push can replace this later.
+
     const interval = window.setInterval(() => loadDashboard(true), 10000);
     return () => window.clearInterval(interval);
   }, [loadDashboard]);
@@ -202,7 +202,7 @@ export default function TelemetryDashboard() {
       }));
     return [...deviceEvents, ...anomalousSamples]
       .sort((a, b) => {
-        // Active disconnections remain prominent, then newer telemetry anomalies.
+
         if (a.id.startsWith("health-") !== b.id.startsWith("health-")) {
           return a.id.startsWith("health-") ? -1 : 1;
         }
@@ -319,18 +319,9 @@ export default function TelemetryDashboard() {
   return (
     <div className="sx-app">
       <a className="sx-skip" href="#sx-main">Skip to dashboard</a>
-      <Navbar variant="sidebar" />
-        <a className="sx-brand" href="/telemetry"><span className="sx-brand-mark">✳</span> Smart<span>X</span></a>
-        <p className="sx-sidebar-label">WORKSPACE</p>
-        <nav className="sx-nav">
-          <a className="sx-nav-link sx-nav-link--active" href="/telemetry" aria-current="page">◫ &nbsp; Operations</a>
-          <a className="sx-nav-link" href="/">▤ &nbsp; Sensor registry</a>
-        </nav>
-        <div className="sx-sidebar-foot">
-          <div className="sx-live-dot" aria-hidden="true" />
-          <div><strong>Gateway overview</strong><small>Auto-refresh · 10 seconds</small></div>
-        </div>
-
+      <div className="sx-telemetry-topnav">
+        <Navbar variant="top" />
+      </div>
 
       <main id="sx-main" className="sx-main">
         <header className="sx-topbar">
@@ -366,7 +357,7 @@ export default function TelemetryDashboard() {
               <MetricCard label="RECENT ANOMALIES" value={anomalousSamples.length} note={`Across ${telemetry.length} recent samples`} tone="warning" onClick={() => showSensorHealth("Alerts")} active={statusFilter === "Alerts"} />
             </section>
 
-            {guideVisible && (
+            {guideVisible && completed < onboarding.length && (
               <section className="sx-panel sx-onboarding" aria-label="Getting started checklist">
                 <div className="sx-onboard-copy">
                   <span className="sx-eyebrow">GUIDED SETUP</span>
@@ -390,7 +381,7 @@ export default function TelemetryDashboard() {
               <section id="sx-live-chart" className="sx-panel sx-chart-panel" aria-labelledby="sx-chart-heading">
                 <div className="sx-panel-header">
                   <div><span className="sx-eyebrow">ANALYSE</span><h2 id="sx-chart-heading">Telemetry trends</h2></div>
-                  <span className="sx-small-tag">Up to 100 recent samples per sensor</span>
+                  <span className="sx-small-tag">Up to 60 plotted samples per sensor</span>
                 </div>
                 <div className="sx-toolbar">
                   <div className="sx-segmented" role="group" aria-label="Select measurement">
@@ -440,7 +431,7 @@ export default function TelemetryDashboard() {
                     {events.map((event) => (
                       <button key={event.id} type="button" className="sx-event" onClick={() => inspectSensor(event.sensorId)} aria-label={`Inspect sensor ${event.sensorId}: ${event.title}`}>
                         <span className={`sx-event-indicator sx-event-indicator--${event.severity}`} aria-hidden="true" />
-                        <span className="sx-event-content"><strong>{event.title}</strong><span>{sensorsById.get(Number(event.sensorId))?.location || `Sensor ${event.sensorId}`}</span><small>{event.detail}</small></span>
+                        <span className="sx-event-content"><strong>{event.title}</strong><span>{sensorsById.get(Number(event.sensorId))?.location || `Sensor ${event.sensorId}`} · Sensor #{event.sensorId}</span><small>{event.detail}</small></span>
                         <span className="sx-event-arrow" aria-hidden="true">↗</span>
                       </button>
                     ))}

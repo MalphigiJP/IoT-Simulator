@@ -221,6 +221,14 @@ The system supports controlling pumps, irrigation valves and smart plugs through
 - Simulated Device Command Execution and Acknowledgement
 - Manual Command Undo Using Stack<T>
 - Persistent Command History and SQL Server Audit Logging
+
+## Phase 5 - Command Centre Dashboard
+Phase 5 introduces an interactive React-based Command Centre for managing Smart-X IoT devices. Operators can remotely control smart plugs, irrigation valves, and pumps, monitor device connectivity, track command execution, and undo previous actions. The dashboard also includes searchable command history, SQL Server audit logs, real-time status updates, and responsive layouts. Safety checks prevent commands from being issued to offline devices or devices with outstanding operations.
+
+## Phase 6 – Predictive Actions & Recommendation Engine
+
+Phase 6 introduces an explainable, rule-based recommendation engine that analyses historical telemetry, operator searches, and previously executed device commands. Smart-X identifies recurring relationships between sensor anomalies and operator actions, then ranks suggested actions using historical frequency, recency, current sensor conditions, and device readiness. A dedicated Suggested Actions dashboard displays recommendation scores, supporting evidence, and safety warnings. All recommendations are advisory only, ensuring that operators retain full control over device operations.
+
 ## Reference List
 
 ## Assigment 2

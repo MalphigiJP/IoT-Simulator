@@ -1,5 +1,5 @@
-
 .sx-rec-page {
+  box-sizing: border-box;
   --sx-rec-bg: #0b1524;
   --sx-rec-surface: #122136;
   --sx-rec-border: #2a405b;
@@ -372,17 +372,17 @@
   font-weight: 750;
 }
 
-.sx-rec-Review {
+.sx-rec-review {
   color: #8be5bd;
   background: rgba(58, 177, 117, 0.15);
 }
 
-.sx-rec-Monitor {
+.sx-rec-monitor {
   color: #f0d092;
   background: rgba(197, 137, 56, 0.15);
 }
 
-.sx-rec-Blocked {
+.sx-rec-blocked {
   color: #ffb4bf;
   background: rgba(208, 73, 102, 0.15);
 }

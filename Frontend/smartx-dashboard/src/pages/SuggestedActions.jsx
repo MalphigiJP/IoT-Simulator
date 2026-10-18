@@ -1,9 +1,10 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 import { getRankedRecommendations } from "../api/insightApi";
 import { getCommandErrorMessage } from "../api/commandApi";
 import "./SuggestedActions.css";
+import "./SmartXPageLayout.css";
 
 const REFRESH_INTERVAL = 60000;
 
@@ -639,7 +640,9 @@ export default function SuggestedActions() {
   ]);
 
   return (
-    <main className="sx-rec-page">
+    <div className="sx-rec-app">
+      <Navbar variant="top" />
+      <main className="sx-rec-page">
       <header className="sx-rec-page-header">
         <div>
           <div className="sx-rec-eyebrow">
@@ -741,29 +744,6 @@ export default function SuggestedActions() {
         </select>
       </div>
 
-
-        <div className="sx-rec-form-field">
-          <label htmlFor="sx-rec-window">
-            Follow-up window
-          </label>
-
-          <select
-            id="sx-rec-window"
-            value={draftFilters.windowMinutes}
-            onChange={(event) =>
-              setDraftFilters((previous) => ({
-                ...previous,
-                windowMinutes: event.target.value,
-              }))
-            }
-          >
-            <option value="5">5 minutes</option>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-            <option value="60">60 minutes</option>
-            <option value="120">120 minutes</option>
-          </select>
-        </div>
 
         <div className="sx-rec-form-field">
           <label htmlFor="sx-rec-sensor">
@@ -1028,6 +1008,7 @@ export default function SuggestedActions() {
             "Advisory analysis only. No commands are executed."}
         </p>
       </footer>
-    </main>
+      </main>
+    </div>
   );
 }

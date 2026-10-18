@@ -1,8 +1,8 @@
-
 import { Link } from "react-router-dom";
 
 import Navbar from "../components/Navbar";
 import "./ModulePages.css";
+import "./SmartXPageLayout.css";
 
 const networkModules = [
     {

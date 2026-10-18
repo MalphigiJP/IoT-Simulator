@@ -385,18 +385,22 @@ public static class HistoricalRelationshipAnalyzer
                 accumulator.MatchedEpisodes++;
                 accumulator.TotalDelayMinutes += delayMinutes;
 
-                if (accumulator.Examples.Count < 3)
+
+                if (accumulator.Examples.Count == 3)
                 {
-                    accumulator.Examples.Add(
-                        new RelationshipExample(
-                            episode.ObservedAtUtc,
-                            episode.ObservedValue,
-                            action.CommandId,
-                            AsUtc(action.RequestedAtUtc),
-                            Math.Round(delayMinutes, 1)
-                        )
-                    );
+                    accumulator.Examples.RemoveAt(0);
                 }
+
+                accumulator.Examples.Add(
+                    new RelationshipExample(
+                        episode.ObservedAtUtc,
+                        episode.ObservedValue,
+                        action.CommandId,
+                        AsUtc(action.RequestedAtUtc),
+                        Math.Round(delayMinutes, 1)
+                    )
+                );
+
 
                 foreach (var search in searches)
                 {

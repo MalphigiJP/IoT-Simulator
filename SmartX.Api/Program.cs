@@ -55,6 +55,7 @@ builder.Services.AddSingleton<DeviceCommandService>();
 builder.Services.AddSingleton<DeviceCommandPersistence>();
 builder.Services.AddHostedService<DeviceCommandRestoreService>();
 builder.Services.AddScoped<HistoricalRelationshipService>();
+builder.Services.AddScoped<RecommendationService>();
 
 var app = builder.Build();
 
@@ -496,5 +497,6 @@ app.MapGet("/api/alerts/disconnected",
 app.MapDeviceCommandEndpoints();
 app.MapOperatorInteractionEndpoints();
 app.MapHistoricalRelationshipEndpoints();
+app.MapRecommendationEndpoints();
 
 app.Run();

@@ -4,12 +4,11 @@
     "\\Data",
     "\\DTOs",
     "\\Endpoints",
-    "\\Migrations",
     "\\Models",
     "\\Properties",
     "\\Services",
     "\\Validation"
   ],
-  "SelectedNode": "\\Services\\HistoricalRelationshipService.cs",
+  "SelectedNode": "\\Program.cs",
   "PreviewInSolutionExplorer": false
 }

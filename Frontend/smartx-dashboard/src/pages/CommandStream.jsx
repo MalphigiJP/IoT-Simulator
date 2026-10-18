@@ -15,7 +15,7 @@ import { getConnectionStatus } from "../utils/commandConnectivity";
 import { useDeviceConnectivity } from "../hooks/useDeviceConnectivity";
 import CommandConnectivityPanel from "../components/CommandConnectivityPanel";
 import "./CommandStream.css";
-
+import { recordOperatorSearch } from "../api/insightApi";
 const PAGE_SIZE = 8;
 const HISTORY_PAGE_SIZE = 10;
 
@@ -434,9 +434,9 @@ function CommandHistoryPanel({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [originFilter, setOriginFilter] = useState("all");
-  const [visibleCount, setVisibleCount] =
-    useState(HISTORY_PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [expandedId, setExpandedId] = useState(null);
+  const [searchActivityError, setSearchActivityError] = useState("");
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -1430,6 +1430,35 @@ export default function CommandStream() {
     }
   );
 
+  
+async function handleDeviceSearchKeyDown(event) {
+  if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const query = search.trim();
+
+  if (query.length < 2) {
+    return;
+  }
+
+    try {
+      await recordOperatorSearch({
+        query,
+        scope: "sensors",
+        resultCount: filteredSensors.length,
+      });
+
+      setSearchActivityError("");
+    } catch (error) {
+      setSearchActivityError(
+        getCommandErrorMessage(error)
+      );
+    }
+  }
+
   return (
     <main className="sx-command-page">
       <header className="sx-command-header">
@@ -1561,12 +1590,20 @@ export default function CommandStream() {
               <input
                 type="search"
                 value={search}
-                onChange={(event) =>
-                  setSearch(event.target.value)
-                }
+                onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search device, MAC or location"
                 aria-label="Search devices"
               />
+
+                {searchActivityError && (
+                  <div
+                    className="sx-command-inline-error"
+                    role="alert"
+                  >
+                    Search activity could not be recorded:{" "}
+                    {searchActivityError}
+                  </div>
+                )}
 
               <select
                 value={typeFilter}

@@ -494,4 +494,6 @@ app.MapGet("/api/alerts/disconnected",
 
 app.MapDeviceCommandEndpoints();
 
+app.MapOperatorInteractionEndpoints();
+
 app.Run();

@@ -25,6 +25,9 @@ public class SmartXContext : DbContext
     public DbSet<DeviceCommandAuditEvent> DeviceCommandAuditEvents =>
         Set<DeviceCommandAuditEvent>();
 
+    public DbSet<OperatorSearchEvent> OperatorSearchEvents =>
+        Set<OperatorSearchEvent>();
+
     protected override void OnModelCreating(
         ModelBuilder modelBuilder)
     {
@@ -39,5 +42,38 @@ public class SmartXContext : DbContext
 
         modelBuilder.Entity<TelemetryRecord>()
             .HasIndex(t => t.Timestamp);
+
+
+        modelBuilder.Entity<OperatorSearchEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.Scope)
+                .HasMaxLength(32)
+                .IsRequired();
+
+            entity.Property(e => e.SearchText)
+                .HasMaxLength(160)
+                .IsRequired();
+
+            entity.HasIndex(e => e.RecordedAtUtc);
+
+            entity.HasIndex(e => new
+            {
+                e.SensorId,
+                e.RecordedAtUtc
+            });
+
+            entity.HasIndex(e => new
+            {
+                e.Scope,
+                e.RecordedAtUtc
+            });
+        });
+
+
     }
 }

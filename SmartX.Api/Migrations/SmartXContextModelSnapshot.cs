@@ -137,6 +137,44 @@ namespace SmartX.Api.Migrations
                     b.ToTable("DeviceControlStates");
                 });
 
+            modelBuilder.Entity("SmartX.Api.Models.OperatorSearchEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ResultCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<int?>("SensorId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecordedAtUtc");
+
+                    b.HasIndex("Scope", "RecordedAtUtc");
+
+                    b.HasIndex("SensorId", "RecordedAtUtc");
+
+                    b.ToTable("OperatorSearchEvents");
+                });
+
             modelBuilder.Entity("SmartX.Api.Models.Sensor", b =>
                 {
                     b.Property<int>("Id")

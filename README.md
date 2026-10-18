@@ -229,7 +229,25 @@ Phase 5 introduces an interactive React-based Command Centre for managing Smart-
 
 Phase 6 introduces an explainable, rule-based recommendation engine that analyses historical telemetry, operator searches, and previously executed device commands. Smart-X identifies recurring relationships between sensor anomalies and operator actions, then ranks suggested actions using historical frequency, recency, current sensor conditions, and device readiness. A dedicated Suggested Actions dashboard displays recommendation scores, supporting evidence, and safety warnings. All recommendations are advisory only, ensuring that operators retain full control over device operations.
 
+# Part 2 – Requirements and Implementation
+
+The following table identifies where each Part 2 requirementc is implemented in the Smart-X application.
+
+| Requirement | Implementation |
+|---|---|
+| Main Menu & Navigation | `Navbar.jsx` provides navigation between Telemetry, Command Centre, Sensor Registry, Suggested Actions and Network Topology. React Router enables navigation without losing application state, supported by `AppStateContext`. Network Topology is reserved for the final POE. |
+| Real-Time Command Stream | `CommandStream.jsx` provides live device monitoring, search/filtering, manual control of smart plugs, pumps and valves, command acknowledgements, execution history, undo functionality and audit logs. |
+| Queue – FIFO | The C# backend uses `Queue<T>` to process incoming telemetry packets in First-In-First-Out order. |
+| **Priority Queue** | `PriorityQueue<TElement, TPriority>` prioritises critical telemetry alerts, allowing urgent anomalies to be processed ahead of standard events. |
+| Stack – Undo | `DeviceCommandService` uses `Stack<T>` to maintain manual command history and support Last-In-First-Out undo operations. |
+| Dictionary – Fast Lookups | `Dictionary<TKey, TValue>` manages registered/live devices by unique identifiers for efficient O(1) average-case lookups. |
+| SortedDictionary – Historical Logs | `SortedDictionary<TKey, TValue>` organises historical telemetry chronologically for efficient timeline retrieval and display. |
+| HashSet – Unique Alerts | `HashSet<T>` tracks unique active device errors and disconnections, preventing duplicate alert processing. |
+| Predictive Recommendation Engine | `OperatorSearchEvent` records search activity, `HistoricalRelationshipAnalyzer.cs` identifies anomaly-action patterns, and `RecommendationRanker.cs` scores suggested actions. `SuggestedActions.jsx` displays explainable recommendations and device warnings. |
+| ESP32 Simulation | `SmartX.DeviceSimulator` simulates environmental sensors, smart plugs, irrigation valves and pumps, sending telemetry and receiving commands through the REST API. |
+
 ## Reference List
+
 
 ## Assigment 2
 Microsoft Ignite.2026. Unit testing C# in .NET using dotnet test and xUnit. [online]. Available at: <https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-csharp-with-xunit> [Accessed 15 October 2026]

@@ -694,29 +694,53 @@ export default function SuggestedActions() {
         className="sx-rec-analysis-form"
         onSubmit={handleApplyFilters}
       >
-        <div className="sx-rec-form-field">
-          <label htmlFor="sx-rec-days">
-            Historical period
-          </label>
 
-          <select
-            id="sx-rec-window"
-            value={draftFilters.windowMinutes}
-            onChange={(event) =>
-              setDraftFilters((previous) => ({
-                ...previous,
-                windowMinutes: event.target.value,
-              }))
-            }
-          >
-            <option value="1">1 minute (Quick test)</option>
-            <option value="5">5 minutes</option>
-            <option value="15">15 minutes</option>
-            <option value="30">30 minutes</option>
-            <option value="60">60 minutes</option>
-            <option value="120">120 minutes</option>
-          </select>
-        </div>
+<div className="sx-rec-form-field">
+  <label htmlFor="sx-rec-days">
+    Historical period
+  </label>
+
+  <select
+    id="sx-rec-days"
+    value={draftFilters.days}
+    onChange={(event) =>
+      setDraftFilters((previous) => ({
+        ...previous,
+        days: event.target.value,
+      }))
+    }
+  >
+    <option value="1">Last 24 hours</option>
+    <option value="7">Last 7 days</option>
+    <option value="14">Last 14 days</option>
+    <option value="30">Last 30 days</option>
+  </select>
+</div>
+
+      <div className="sx-rec-form-field">
+        <label htmlFor="sx-rec-window">
+          Follow-up window
+        </label>
+
+        <select
+          id="sx-rec-window"
+          value={draftFilters.windowMinutes}
+          onChange={(event) =>
+            setDraftFilters((previous) => ({
+              ...previous,
+              windowMinutes: event.target.value,
+            }))
+          }
+        >
+          <option value="1">1 minute (Quick test)</option>
+          <option value="5">5 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="60">60 minutes</option>
+          <option value="120">120 minutes</option>
+        </select>
+      </div>
+
 
         <div className="sx-rec-form-field">
           <label htmlFor="sx-rec-window">

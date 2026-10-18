@@ -55,3 +55,25 @@ export async function getOperatorInteractions({
 
   return response.data;
 }
+
+
+export async function getRankedRecommendations({
+  days = 7,
+  windowMinutes = 30,
+  sensorId = null,
+  signal,
+} = {}) {
+  const response = await commandClient.get(
+    "/insights/recommendations",
+    {
+      params: {
+        days,
+        windowMinutes,
+        ...(sensorId != null ? { sensorId } : {}),
+      },
+      signal,
+    }
+  );
+
+  return response.data;
+}

@@ -72,7 +72,12 @@ function Navbar({ variant = "sidebar" }) {
 
                                 <span>{item.shortLabel}</span>
                             </NavLink>
+                            
                         ))}
+
+                        <NavLink to="/suggestions">
+                        Suggested Actions
+                        </NavLink>
                     </nav>
                 </div>
             </header>

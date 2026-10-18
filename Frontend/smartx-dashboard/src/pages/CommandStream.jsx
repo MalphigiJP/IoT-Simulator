@@ -431,12 +431,13 @@ function CommandHistoryPanel({
   error,
   onClose,
 }) {
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [originFilter, setOriginFilter] = useState("all");
   const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE_SIZE);
   const [expandedId, setExpandedId] = useState(null);
-  const [searchActivityError, setSearchActivityError] = useState("");
+
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -839,7 +840,15 @@ export default function CommandStream() {
   const [sensorError, setSensorError] = useState("");
   const [loadingSensors, setLoadingSensors] = useState(true);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sensorId = params.get("sensorId");
+
+    return sensorId && /^[1-9]\d*$/.test(sensorId)
+      ? sensorId
+      : "";
+  });
+  const [searchActivityError, setSearchActivityError] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
 
@@ -1591,19 +1600,10 @@ async function handleDeviceSearchKeyDown(event) {
                 type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={handleDeviceSearchKeyDown}
                 placeholder="Search device, MAC or location"
                 aria-label="Search devices"
               />
-
-                {searchActivityError && (
-                  <div
-                    className="sx-command-inline-error"
-                    role="alert"
-                  >
-                    Search activity could not be recorded:{" "}
-                    {searchActivityError}
-                  </div>
-                )}
 
               <select
                 value={typeFilter}
@@ -1622,6 +1622,12 @@ async function handleDeviceSearchKeyDown(event) {
                 </option>
               </select>
             </div>
+
+            {searchActivityError && (
+              <div className="sx-command-inline-error" role="alert">
+                Search activity could not be recorded: {searchActivityError}
+              </div>
+            )}
 
             {loadingSensors && sensors.length === 0 ? (
               <div className="sx-command-empty">

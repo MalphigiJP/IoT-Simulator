@@ -1,3 +1,6 @@
+
+cd "C:\Users\emeris\Documents\Work\smartx-project"
+
 $env:SMARTX_API_URL = "http://localhost:5000"
 $env:SMARTX_LOAD_TEST = "false"
 $env:SMARTX_FAULTS_ENABLED = "false"
@@ -5,4 +8,4 @@ $env:SMARTX_OUTAGE_ENABLED = "false"
 $env:SMARTX_SIM_DURATION_SECONDS = "0"
 $env:SMARTX_SIM_MAX_READINGS_PER_DEVICE = "0"
 
-dotnet run --project .\SmartX.DeviceSimulator.csproj
+dotnet run --project .\SmartX.DeviceSimulator\SmartX.DeviceSimulator.csproj

@@ -12,6 +12,7 @@ import TelemetryDashboard from "./pages/TelemetryDashboard";
 import Sensors from "./pages/Sensors";
 import CommandStream from "./pages/CommandStream";
 import NetworkTopology from "./pages/NetworkTopology";
+import SuggestedActions from "./pages/SuggestedActions";
 
 function App() {
     return (
@@ -57,6 +58,11 @@ function App() {
                                 replace
                             />
                         }
+                    />
+
+                    <Route
+                        path="/suggestions"
+                        element={<SuggestedActions />}
                     />
 
                 </Routes>

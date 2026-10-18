@@ -54,6 +54,7 @@ builder.Services.AddHostedService<TelemetryQueueWorker>();
 builder.Services.AddSingleton<DeviceCommandService>();
 builder.Services.AddSingleton<DeviceCommandPersistence>();
 builder.Services.AddHostedService<DeviceCommandRestoreService>();
+builder.Services.AddScoped<HistoricalRelationshipService>();
 
 var app = builder.Build();
 
@@ -493,7 +494,7 @@ app.MapGet("/api/alerts/disconnected",
     .WithName("GetDisconnectedSensorIds");
 
 app.MapDeviceCommandEndpoints();
-
 app.MapOperatorInteractionEndpoints();
+app.MapHistoricalRelationshipEndpoints();
 
 app.Run();

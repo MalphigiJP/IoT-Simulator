@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Smart-X — Phase 2 Functional API Tests (localhost:5001)",
+    "name": "Smart-X — Phase 2 Functional API Tests (localhost:5000)",
     "_postman_id": "216b1bea-aec2-46d5-aee6-f595901ebca6",
-    "description": "Run folder 01 in Postman Collection Runner with a 250–500 ms request delay and no parallel simulator traffic. It creates a disposable sensor and covers Queue<T>, PriorityQueue<TElement,TPriority>, Dictionary, SortedDictionary and HashSet alerts via HTTP. For offline detection, wait >130 seconds and run folder 02 manually. Run folder 03 last to delete the test sensor. Unit tests (dotnet test) prove actual priority dequeue order, FIFO and cache boundaries deterministically.\n\nAll 32 request URLs explicitly use http://localhost:5001 (no baseUrl variable). Start ASP.NET Core with that HTTP address enabled, e.g. applicationUrl: http://localhost:5000;http://localhost:5001. The collection still uses sensorId, testMac, sameTimestamp, and queueBaseline for test data.",
+    "description": "Run folder 01 in Postman Collection Runner with a 250–500 ms request delay and no parallel simulator traffic. It creates a disposable sensor and covers Queue<T>, PriorityQueue<TElement,TPriority>, Dictionary, SortedDictionary and HashSet alerts via HTTP. For offline detection, wait >130 seconds and run folder 02 manually. Run folder 03 last to delete the test sensor. Unit tests (dotnet test) prove actual priority dequeue order, FIFO and cache boundaries deterministically.\n\nAll 32 request URLs explicitly use http://localhost:5000 (no baseUrl variable). Start ASP.NET Core with that HTTP address enabled, e.g. applicationUrl: http://localhost:5000. The collection still uses sensorId, testMac, sameTimestamp, and queueBaseline for test data.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -15,7 +15,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/"
+            "url": "http://localhost:5000/"
           },
           "event": [
             {
@@ -40,7 +40,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/sensors",
+            "url": "http://localhost:5000/api/sensors",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"macAddress\": \"{{testMac}}\",\n  \"location\": \"Phase 2 QA - Initial\",\n  \"category\": \"Environmental\"\n}",
@@ -89,7 +89,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/devices/live"
+            "url": "http://localhost:5000/api/devices/live"
           },
           "event": [
             {
@@ -119,7 +119,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/sensors/{{sensorId}}",
+            "url": "http://localhost:5000/api/sensors/{{sensorId}}",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"macAddress\": \"{{testMac}}\",\n  \"location\": \"Phase 2 QA - Updated\",\n  \"category\": \"Environmental\"\n}",
@@ -149,7 +149,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/devices/live/{{testMac}}"
+            "url": "http://localhost:5000/api/devices/live/{{testMac}}"
           },
           "event": [
             {
@@ -174,7 +174,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/queue/status"
+            "url": "http://localhost:5000/api/telemetry/queue/status"
           },
           "event": [
             {
@@ -206,7 +206,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 25,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500,\n  \"valveOpen\": false\n}",
@@ -245,7 +245,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 58,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500,\n  \"valveOpen\": false\n}",
@@ -284,7 +284,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 82,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500,\n  \"valveOpen\": false\n}",
@@ -323,7 +323,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry/batch",
+            "url": "http://localhost:5000/api/telemetry/batch",
             "body": {
               "mode": "raw",
               "raw": "[\n  {\n    \"sensorId\": {{sensorId}},\n    \"temperature\": 24,\n    \"timestamp\": \"{{sameTimestamp}}\"\n  },\n  {\n    \"sensorId\": {{sensorId}},\n    \"temperature\": 26,\n    \"timestamp\": \"{{sameTimestamp}}\"\n  }\n]",
@@ -362,7 +362,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/queue/status"
+            "url": "http://localhost:5000/api/telemetry/queue/status"
           },
           "event": [
             {
@@ -405,7 +405,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/sensors/{{sensorId}}/telemetry/timeline"
+            "url": "http://localhost:5000/api/sensors/{{sensorId}}/telemetry/timeline"
           },
           "event": [
             {
@@ -435,7 +435,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/timeline/status"
+            "url": "http://localhost:5000/api/telemetry/timeline/status"
           },
           "event": [
             {
@@ -466,7 +466,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 82,\n  \"soilMoisture\": 2,\n  \"wattage\": 9500\n}",
@@ -495,7 +495,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/queue/status"
+            "url": "http://localhost:5000/api/telemetry/queue/status"
           },
           "event": [
             {
@@ -528,7 +528,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/active"
+            "url": "http://localhost:5000/api/alerts/active"
           },
           "event": [
             {
@@ -560,7 +560,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 84,\n  \"soilMoisture\": 2,\n  \"wattage\": 9600\n}",
@@ -589,7 +589,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/queue/status"
+            "url": "http://localhost:5000/api/telemetry/queue/status"
           },
           "event": [
             {
@@ -622,7 +622,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/active"
+            "url": "http://localhost:5000/api/alerts/active"
           },
           "event": [
             {
@@ -654,7 +654,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 25,\n  \"soilMoisture\": 65,\n  \"wattage\": 1500\n}",
@@ -683,7 +683,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/queue/status"
+            "url": "http://localhost:5000/api/telemetry/queue/status"
           },
           "event": [
             {
@@ -716,7 +716,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/active"
+            "url": "http://localhost:5000/api/alerts/active"
           },
           "event": [
             {
@@ -740,7 +740,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/status"
+            "url": "http://localhost:5000/api/alerts/status"
           },
           "event": [
             {
@@ -766,7 +766,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/devices/live/{{testMac}}"
+            "url": "http://localhost:5000/api/devices/live/{{testMac}}"
           },
           "event": [
             {
@@ -799,7 +799,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/disconnected",
+            "url": "http://localhost:5000/api/alerts/disconnected",
             "description": "Wait 130–140 seconds after completing the automated folder, without sending telemetry, before running this. DeviceConnectivityMonitor checks every 10 seconds."
           },
           "event": [
@@ -822,7 +822,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/active"
+            "url": "http://localhost:5000/api/alerts/active"
           },
           "event": [
             {
@@ -850,7 +850,7 @@
                 "value": "application/json"
               }
             ],
-            "url": "http://localhost:5001/api/telemetry",
+            "url": "http://localhost:5000/api/telemetry",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"sensorId\": {{sensorId}},\n  \"temperature\": 25,\n  \"soilMoisture\": 65\n}",
@@ -879,7 +879,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/telemetry/queue/status"
+            "url": "http://localhost:5000/api/telemetry/queue/status"
           },
           "event": [
             {
@@ -912,7 +912,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/disconnected"
+            "url": "http://localhost:5000/api/alerts/disconnected"
           },
           "event": [
             {
@@ -940,7 +940,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "http://localhost:5001/api/sensors/{{sensorId}}"
+            "url": "http://localhost:5000/api/sensors/{{sensorId}}"
           },
           "event": [
             {
@@ -960,7 +960,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/devices/live/{{testMac}}"
+            "url": "http://localhost:5000/api/devices/live/{{testMac}}"
           },
           "event": [
             {
@@ -980,7 +980,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:5001/api/alerts/active"
+            "url": "http://localhost:5000/api/alerts/active"
           },
           "event": [
             {

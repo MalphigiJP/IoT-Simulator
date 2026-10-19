@@ -1,11 +1,28 @@
-
-cd "C:\Users\emeris\Documents\Work\smartx-project"
-
 $env:SMARTX_API_URL = "http://localhost:5000"
 $env:SMARTX_LOAD_TEST = "false"
 $env:SMARTX_FAULTS_ENABLED = "false"
 $env:SMARTX_OUTAGE_ENABLED = "false"
 $env:SMARTX_SIM_DURATION_SECONDS = "0"
 $env:SMARTX_SIM_MAX_READINGS_PER_DEVICE = "0"
+
+dotnet run --project .\SmartX.DeviceSimulator.csproj
+
+-----------
+
+$env:SMARTX_LOAD_TEST = "false"
+$env:SMARTX_FAULTS_ENABLED = "true"
+$env:SMARTX_OUTAGE_ENABLED = "false"
+
+$env:SMARTX_SIM_DURATION_SECONDS = "180"
+$env:SMARTX_SIM_MAX_READINGS_PER_DEVICE = "0"
+
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host " SMART-X ANOMALY TESTING MODE" -ForegroundColor Yellow
+Write-Host "======================================" -ForegroundColor Cyan
+Write-Host "Simulated faults: ENABLED" -ForegroundColor Green
+Write-Host "Network outages: DISABLED"
+Write-Host "Load testing: DISABLED"
+Write-Host "Duration: 3 minutes"
+Write-Host "Starting device simulation..." -ForegroundColor Cyan
 
 dotnet run --project .\SmartX.DeviceSimulator\SmartX.DeviceSimulator.csproj

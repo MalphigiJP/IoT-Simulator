@@ -235,6 +235,11 @@ The following table identifies where each Part 2 requirementc is implemented in 
 | Predictive Recommendation Engine | `OperatorSearchEvent` records search activity, `HistoricalRelationshipAnalyzer.cs` identifies anomaly-action patterns, and `RecommendationRanker.cs` scores suggested actions. `SuggestedActions.jsx` displays explainable recommendations and device warnings. |
 | ESP32 Simulation | `SmartX.DeviceSimulator` simulates environmental sensors, smart plugs, irrigation valves and pumps, sending telemetry and receiving commands through the REST API. |
 
+## Postman included in repository
+<img width="1887" height="1006" alt="postman" src="https://github.com/user-attachments/assets/6fac9a94-7805-492f-b087-08556d1ebee2" />
+
+
+
 ## Reference List
 
 

@@ -46,17 +46,6 @@ Each registered sensor provides the identity used to associate incoming telemetr
 
 ## How Smart-X works
 
-```mermaid
-flowchart LR
-    A[ESP32 devices / simulated sensor readings] --> B[ASP.NET Core Minimal API]
-    B --> C[Input validation and sensor association]
-    C --> D[(SQL Server)]
-    D --> E[Sensor and telemetry endpoints]
-    E --> F[React Operations Centre]
-    E --> G[React Sensor Registry]
-    H[Built-in telemetry simulator] --> D
-```
-
 **1. Register devices.** A sensor is added with identifying information such as its MAC address, category, and installation location.
 
 **2. Ingest telemetry.** The API accepts individual readings or batches of readings associated with registered sensor IDs. A reading can contain temperature, soil moisture, power consumption, and actuator state values.

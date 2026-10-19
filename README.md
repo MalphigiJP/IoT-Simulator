@@ -238,6 +238,43 @@ The following table identifies where each Part 2 requirementc is implemented in 
 ## Postman included in repository
 <img width="1887" height="1006" alt="postman" src="https://github.com/user-attachments/assets/6fac9a94-7805-492f-b087-08556d1ebee2" />
 
+## Part 2 – Requirements and Code References
+
+The following table identifies the implementation of the Part 2 requirements and the relevant source-code locations.
+
+| Requirement                            | Source file                      |
+| -------------------------------------- | -------------------------------- |
+| **Main Menu & Navigation**             | `src/components/Navbar.jsx`      |
+| **Application State Preservation**     | `src/pages/Sensors.jsx`          |
+| **Real-Time Command Stream**           | `src/pages/CommandStream.jsx`    |
+| **Manual Device Commands**             | `src/pages/CommandStream.jsx`    |
+| **Device Search & Filtering**          | `src/pages/CommandStream.jsx`    |
+| **Command History**                    | `src/pages/CommandStream.jsx`    |
+| **Undo Functionality**                 | `src/pages/CommandStream.jsx`    |
+| **SQL Audit Timeline**                 | `src/pages/CommandStream.jsx`    |
+| **Live Device Connectivity**           | `src/pages/CommandStream.jsx`    |
+| **Operator Search Tracking**           | `src/pages/CommandStream.jsx`    |
+| **Recommendation Dashboard**           | `src/pages/SuggestedActions.jsx` |
+| **Recommendation Filtering & Ranking** | `src/pages/SuggestedActions.jsx` |
+| **Explainable Recommendation Scores**  | `src/pages/SuggestedActions.jsx` |
+| **Human-Supervised Actions**           | `src/pages/SuggestedActions.jsx` |
+
+### Backend – Advanced Data Structures
+
+| Requirement                  | Primary implementation                                               | Purpose                                                                     |
+| ---------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **FIFO Queue**               | Telemetry ingestion services – `Queue<T>`                            | Processes incoming telemetry in arrival order.                              |
+| **Priority Queue**           | Telemetry processing services – `PriorityQueue<TElement, TPriority>` | Prioritises critical alerts.                                                |
+| **Stack**                    | `DeviceCommandService.cs` – `Stack<T>`                               | Maintains manual-command history for LIFO undo.                             |
+| **Dictionary**               | Live device registry – `Dictionary<TKey, TValue>`                    | Provides efficient device lookups.                                          |
+| **SortedDictionary**         | Historical telemetry processing – `SortedDictionary<TKey, TValue>`   | Organises timestamped readings chronologically.                             |
+| **HashSet**                  | Active alert/disconnection tracking – `HashSet<T>`                   | Prevents duplicate alert entries.                                           |
+| **Pattern Analysis**         | `HistoricalRelationshipAnalyzer.cs`                                  | Identifies relationships between telemetry anomalies and applied commands.  |
+| **Recommendation Algorithm** | `RecommendationRanker.cs`                                            | Scores historical patterns and classifies recommendations.                  |
+| **Operator History**         | `OperatorSearchEvent.cs` and operator interaction endpoints          | Persists user searches and combines them with command history.              |
+| **ESP32 Simulation**         | `SmartX.DeviceSimulator`                                             | Generates IoT telemetry and processes device commands through the REST API. |
+
+*Frontend line numbers correspond to the latest shared source files. Backend line numbers must be verified against the current repository before submission.*
 
 
 ## Reference List

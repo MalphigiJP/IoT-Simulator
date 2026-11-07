@@ -1,13 +1,10 @@
 {
   "ExpandedNodes": [
     "",
-    "\\Data",
-    "\\DTOs",
-    "\\Endpoints",
-    "\\Models",
-    "\\Properties",
     "\\Services",
+    "\\Services\\Mesh",
     "\\Validation"
   ],
+  "SelectedNode": "\\Services\\Mesh\\MeshGraph.cs",
   "PreviewInSolutionExplorer": false
 }

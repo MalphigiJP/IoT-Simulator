@@ -1,12 +1,13 @@
 
-using Microsoft.EntityFrameworkCore;
 
+using Microsoft.EntityFrameworkCore;
 using SmartX.Api.Data;
 using SmartX.Api.DTOs;
 using SmartX.Api.Models;
 using SmartX.Api.Services;
 using SmartX.Api.Endpoints;
 using SmartX.Api.Services.Mesh;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -497,10 +498,12 @@ app.MapGet("/api/alerts/disconnected",
     .WithName("GetDisconnectedSensorIds");
 
 
+
 app.MapMeshPreviewEndpoints();
 app.MapDeviceCommandEndpoints();
 app.MapOperatorInteractionEndpoints();
 app.MapHistoricalRelationshipEndpoints();
 app.MapRecommendationEndpoints();
+app.MapMeshRoutingEndpoints();
 
 app.Run();

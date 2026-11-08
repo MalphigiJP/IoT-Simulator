@@ -6,6 +6,7 @@ using SmartX.Api.DTOs;
 using SmartX.Api.Models;
 using SmartX.Api.Services;
 using SmartX.Api.Endpoints;
+using SmartX.Api.Services.Mesh;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +57,7 @@ builder.Services.AddSingleton<DeviceCommandPersistence>();
 builder.Services.AddHostedService<DeviceCommandRestoreService>();
 builder.Services.AddScoped<HistoricalRelationshipService>();
 builder.Services.AddScoped<RecommendationService>();
+builder.Services.AddScoped<MeshNetworkSnapshotService>();
 
 var app = builder.Build();
 
@@ -494,6 +496,8 @@ app.MapGet("/api/alerts/disconnected",
     .WithTags("Active Alerts")
     .WithName("GetDisconnectedSensorIds");
 
+
+app.MapMeshPreviewEndpoints();
 app.MapDeviceCommandEndpoints();
 app.MapOperatorInteractionEndpoints();
 app.MapHistoricalRelationshipEndpoints();

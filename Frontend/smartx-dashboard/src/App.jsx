@@ -14,6 +14,7 @@ import CommandStream from "./pages/CommandStream";
 import NetworkTopology from "./pages/NetworkTopology";
 import SuggestedActions from "./pages/SuggestedActions";
 
+
 function App() {
     return (
         <BrowserRouter>
@@ -63,6 +64,11 @@ function App() {
                     <Route
                         path="/suggestions"
                         element={<SuggestedActions />}
+                    />
+
+                    <Route
+                        path="/NetworkTopology"
+                        element={<NetworkTopology />}
                     />
 
                 </Routes>

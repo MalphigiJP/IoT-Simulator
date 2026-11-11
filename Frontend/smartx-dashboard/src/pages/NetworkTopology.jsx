@@ -10,6 +10,7 @@ import {
   getMeshRoute,
 } from "../api/meshApi";
 import "./NetworkTopology.css";
+import MeshHistoryPanel from "../components/MeshHistoryPanel";
 
 const POLL_INTERVAL = 20000;
 const MAX_VISIBLE_NODES = 60;
@@ -583,6 +584,14 @@ export default function NetworkTopology() {
             </section>
           </aside>
         </div>
+
+
+        <MeshHistoryPanel
+          sensorId={selectedId}
+          route={route}
+          snapshotKey={snapshot?.generatedAtUtc}
+        />
+
 
         <section className="sx-topology-card sx-topology-device-directory">
           <div className="sx-topology-card-head">

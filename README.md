@@ -277,6 +277,40 @@ The following table identifies the implementation of the Part 2 requirements and
 *Frontend line numbers correspond to the latest shared source files. Backend line numbers must be verified against the current repository before submission.*
 
 
+## Network Topology & Mesh Routing — Final POE
+
+The Network Topology dashboard provides an interactive visualization of the Smart-X simulated IoT mesh network. It allows users to monitor registered sensors, inspect device connectivity, trace packet routing paths and analyze the network's overall structure.
+
+### Network Topology Dashboard Screenshot
+<img width="1915" height="896" alt="new" src="https://github.com/user-attachments/assets/f5ad99c8-dcf4-4ff4-a6fe-8f4c6b82fe5b" />
+
+
+*Figure: Smart-X Network Topology dashboard displaying registered IoT nodes, the central gateway, simulated mesh connections, device health indicators and routing information.*
+
+### Implemented Features
+
+- **Interactive Mesh Visualization:** Displays registered IoT sensors and their simulated connections to neighbouring nodes and the central gateway.
+- **Shortest-Path Routing:** Uses Dijkstra's algorithm and a priority queue to calculate the lowest-cost route from a selected sensor to the gateway.
+- **Minimum Spanning Tree (MST):** Uses Prim's algorithm to generate a minimum-total-cost network backbone.
+- **Device Health Monitoring:** Displays Online, Delayed, Offline and Unknown sensor statuses based on telemetry activity.
+- **MAC Address Lookup:** Allows users to search for individual sensors and inspect their routing paths.
+- **Historical Telemetry:** Displays previously recorded temperature, soil moisture, wattage and valve-state readings.
+- **Mesh Self-Healing:** Simulates node failures and automatically recalculates routing paths when alternative connections are available.
+- **Route History:** Records observed routing changes during the browser session.
+
+### Data Structures Demonstrated
+
+| Data Structure | Application |
+|---|---|
+| Graph | Represents sensors and their weighted mesh connections |
+| Heap / PriorityQueue | Supports efficient shortest-path and MST calculations |
+| Tree | Represents the gateway-rooted Minimum Spanning Tree |
+| Dictionary | Provides efficient sensor lookup and adjacency storage |
+| HashSet | Tracks visited graph nodes and simulated failures |
+
+**Note:** Mesh connections and routing costs are simulated for educational purposes. Sensor health is derived from telemetry freshness rather than physical wireless connectivity.
+
+
 ## Reference List
 
 
